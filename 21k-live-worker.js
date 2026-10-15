@@ -38,6 +38,30 @@ async function writeRecord(env, record) {
 
 function validShowId(value) { return typeof value === 'string' && /^SHOW_[A-Z0-9]{4,16}$/.test(value); }
 
+function songIdentity(song) {
+  if (song && song._syncId) return String(song._syncId);
+  return [song && song.title, song && song.songKey, song && song.firstChord]
+    .map(value => String(value || '').trim().toLowerCase()).join('|');
+}
+
+function mergeSongLists(existing, incoming) {
+  const merged = Array.isArray(existing) ? existing.map(song => ({ ...song })) : [];
+  const positions = new Map(merged.map((song, index) => [songIdentity(song), index]));
+  for (const song of (Array.isArray(incoming) ? incoming : [])) {
+    if (!song || typeof song !== 'object' || !String(song.title || '').trim()) continue;
+    const key = songIdentity(song);
+    const existingIndex = positions.get(key);
+    if (existingIndex === undefined) {
+      positions.set(key, merged.length);
+      merged.push(song);
+    } else {
+      const previous = merged[existingIndex];
+      if (Number(song._syncUpdatedAt || 0) >= Number(previous._syncUpdatedAt || 0)) merged[existingIndex] = song;
+    }
+  }
+  return merged;
+}
+
 export default {
   async fetch(request, env) {
     const headers = cors(request, env);
@@ -46,11 +70,29 @@ export default {
       if (!env.JSONBIN_BIN_ID || !env.JSONBIN_MASTER_KEY || !env.OWNER_TOKEN) return json({ error: 'Worker is not configured' }, 503, headers);
       const url = new URL(request.url);
       const showId = url.searchParams.get('id');
-      if (!validShowId(showId)) return json({ error: 'Invalid show id' }, 400, headers);
+      if (!url.pathname.endsWith('/library') && !validShowId(showId)) return json({ error: 'Invalid show id' }, 400, headers);
       const owner = request.headers.get('Authorization') === `Bearer ${env.OWNER_TOKEN}`;
       const record = await readRecord(env);
       record.shows = record.shows && typeof record.shows === 'object' ? record.shows : {};
       const show = record.shows[showId];
+
+      if (url.pathname.endsWith('/library') && request.method === 'GET') {
+        if (!owner) return json({ error: 'Unauthorized' }, 401, headers);
+        const library = record.library && typeof record.library === 'object' ? record.library : {};
+        return json({ songs: Array.isArray(library.songs) ? library.songs : [], deletedIds: Array.isArray(library.deletedIds) ? library.deletedIds : [], updatedAt: library.updatedAt || 0 }, 200, headers);
+      }
+      if (url.pathname.endsWith('/library') && request.method === 'PUT') {
+        if (!owner) return json({ error: 'Unauthorized' }, 401, headers);
+        const body = await request.json();
+        if (!Array.isArray(body.songs) || body.songs.length > 3000) return json({ error: 'Invalid library data' }, 400, headers);
+        const library = record.library && typeof record.library === 'object' ? record.library : {};
+        const deletedIds = [...new Set([...(Array.isArray(library.deletedIds) ? library.deletedIds : []), ...(Array.isArray(body.deletedIds) ? body.deletedIds : [])].map(String))];
+        const deleted = new Set(deletedIds);
+        const songs = mergeSongLists(library.songs, body.songs).filter(song => !deleted.has(songIdentity(song)));
+        record.library = { songs, deletedIds, updatedAt: Date.now() };
+        await writeRecord(env, record);
+        return json({ ok: true, songs, deletedIds, updatedAt: record.library.updatedAt }, 200, headers);
+      }
 
       if (url.pathname.endsWith('/show') && request.method === 'GET') {
         if (!show) return json({ error: 'Show not found' }, 404, headers);

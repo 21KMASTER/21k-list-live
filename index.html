@@ -315,6 +315,8 @@
             <button class="btn" id="tabFormBtn" onclick="switchTab('form')">➕ เพิ่มเพลงใหม่</button>
             <button class="btn" id="tabGrooveBtn" onclick="switchTab('groove')">⚙️ ตั้งค่า / Backup</button>
             <button class="btn" id="tabLiveDisplayBtn" style="border-color:var(--primary-emerald); color:var(--primary-emerald); font-weight:800;" onclick="openLivePropter(0)">📺 Live โชว์สด</button>
+            <button class="btn" id="librarySyncButton" onclick="initializeLibraryCloudSync(true)">☁️ ซิงก์คลังเพลง</button>
+            <span id="librarySyncStatus" role="status" style="align-self:center; color:var(--text-secondary); font-size:12px;">คลังเพลงซิงก์ข้ามเครื่อง</span>
         </div>
     </div>
 
@@ -709,11 +711,11 @@
 <div id="ownerTokenModal" class="modal-overlay">
     <div class="modal-box" style="width:min(420px, calc(100% - 32px));">
         <h3 style="margin-top:0; color:var(--primary-emerald);">🔐 รหัสควบคุม Live</h3>
-        <p style="font-size:13px; color:var(--text-secondary);">กรอกรหัสควบคุมที่ตั้งไว้ใน Cloudflare Worker ระบบจะจำรหัสนี้ไว้ในเบราว์เซอร์เครื่องนี้</p>
+        <p style="font-size:13px; color:var(--text-secondary);">กรอกรหัสควบคุมของเจ้าของเพื่อซิงก์คลังเพลงและแชร์ Live ระบบจะจำรหัสนี้ไว้ในเบราว์เซอร์เครื่องนี้</p>
         <form onsubmit="submitOwnerToken(event)">
             <input id="ownerTokenInput" type="password" autocomplete="current-password" required placeholder="รหัสควบคุม" style="width:100%; padding:12px; box-sizing:border-box; margin-bottom:10px;">
             <div id="ownerTokenMessage" role="status" style="color:#f87171; font-size:12px; min-height:18px;"></div>
-            <button type="submit" class="btn" style="background:var(--primary-emerald); color:#000; font-weight:bold; width:100%;">ยืนยันและแชร์ Live</button>
+            <button type="submit" class="btn" style="background:var(--primary-emerald); color:#000; font-weight:bold; width:100%;">ยืนยันรหัสควบคุม</button>
             <button type="button" class="btn" onclick="cancelOwnerToken()" style="background:#374151; color:#fff; width:100%; margin-top:8px;">ยกเลิก</button>
         </form>
     </div>
@@ -752,6 +754,146 @@
     let currentAudioSource = '';
     let liveRequestsPollTimer = null;
     let liveRequestsCache = [];
+    let librarySyncReady = false;
+    let librarySyncBusy = false;
+    let librarySyncTimer = null;
+    let librarySyncDebounce = null;
+    let librarySyncInitPromise = null;
+    let applyingCloudLibrary = false;
+
+    function musicSongSyncId(song) {
+        if (song && song._syncId) return String(song._syncId);
+        const raw = [song && song.title, song && song.songKey, song && song.firstChord]
+            .map(value => String(value || '').trim().toLowerCase()).join('|');
+        let hash = 2166136261;
+        for (let i = 0; i < raw.length; i++) { hash ^= raw.charCodeAt(i); hash = Math.imul(hash, 16777619); }
+        return `song_${(hash >>> 0).toString(36)}`;
+    }
+
+    function musicSongContent(song) {
+        const copy = { ...song };
+        delete copy._syncId;
+        delete copy._syncUpdatedAt;
+        return JSON.stringify(copy);
+    }
+
+    function saveMusicDatabase(songs, options = {}) {
+        const oldSongs = JSON.parse(localStorage.getItem('music_database') || '[]');
+        const oldById = new Map(oldSongs.map(song => [musicSongSyncId(song), song]));
+        const deletedIds = new Set(JSON.parse(localStorage.getItem('music_deleted_ids') || '[]'));
+        const normalized = (Array.isArray(songs) ? songs : []).map(song => {
+            let id = musicSongSyncId(song);
+            if (deletedIds.has(id) && !oldById.has(id) && !song._syncId) id = `song_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+            const oldSong = oldById.get(id);
+            const current = { ...song, _syncId: id };
+            deletedIds.delete(id);
+            if (oldSong && musicSongContent(oldSong) === musicSongContent(current)) {
+                current._syncUpdatedAt = oldSong._syncUpdatedAt || 0;
+            } else {
+                current._syncUpdatedAt = Date.now();
+            }
+            return current;
+        });
+        const currentIds = new Set(normalized.map(musicSongSyncId));
+        oldById.forEach((_song, id) => { if (!currentIds.has(id)) deletedIds.add(id); });
+        localStorage.setItem('music_deleted_ids', JSON.stringify([...deletedIds]));
+        localStorage.setItem('music_database', JSON.stringify(normalized));
+        if (!options.fromCloud && !applyingCloudLibrary && librarySyncReady && !isLiveViewer) scheduleLibraryCloudSync();
+        return normalized;
+    }
+
+    function mergeMusicLibraries(primary, secondary) {
+        const merged = (Array.isArray(primary) ? primary : []).map(song => ({ ...song, _syncId: musicSongSyncId(song) }));
+        const positions = new Map(merged.map((song, index) => [musicSongSyncId(song), index]));
+        (Array.isArray(secondary) ? secondary : []).forEach(song => {
+            if (!song || !String(song.title || '').trim()) return;
+            const id = musicSongSyncId(song);
+            const index = positions.get(id);
+            if (index === undefined) {
+                positions.set(id, merged.length);
+                merged.push({ ...song, _syncId: id });
+            } else if (Number(song._syncUpdatedAt || 0) >= Number(merged[index]._syncUpdatedAt || 0)) {
+                merged[index] = { ...song, _syncId: id };
+            }
+        });
+        return merged;
+    }
+
+    function setLibrarySyncStatus(message, color = 'var(--text-secondary)') {
+        const status = document.getElementById('librarySyncStatus');
+        if (status) { status.textContent = message; status.style.color = color; }
+    }
+
+    function scheduleLibraryCloudSync() {
+        clearTimeout(librarySyncDebounce);
+        setLibrarySyncStatus('กำลังส่งข้อมูลเพลงขึ้นคลาวด์…', 'var(--accent-gold)');
+        librarySyncDebounce = setTimeout(() => syncMusicLibraryWithCloud(), 800);
+    }
+
+    async function syncMusicLibraryWithCloud() {
+        if (!SYNC_API || isLiveViewer || librarySyncBusy) return;
+        librarySyncBusy = true;
+        try {
+            const token = await getOwnerToken();
+            if (!token) { setLibrarySyncStatus('ยังไม่ได้กรอกรหัสซิงก์', '#f87171'); return; }
+            const headers = { 'Authorization': `Bearer ${token}` };
+            const remoteResponse = await fetch(`${SYNC_API}/library`, { headers, cache: 'no-store' });
+            if (remoteResponse.status === 401) {
+                localStorage.removeItem('21k_owner_token');
+                librarySyncReady = false;
+                setLibrarySyncStatus('รหัสควบคุมไม่ถูกต้อง กดซิงก์เพื่อกรอกใหม่', '#f87171');
+                return;
+            }
+            if (!remoteResponse.ok) throw new Error(`อ่านคลังส่วนกลางไม่ได้ (${remoteResponse.status})`);
+            const remote = await remoteResponse.json();
+            const local = JSON.parse(localStorage.getItem('music_database') || '[]');
+            const deletedIds = new Set([
+                ...(Array.isArray(remote.deletedIds) ? remote.deletedIds : []),
+                ...JSON.parse(localStorage.getItem('music_deleted_ids') || '[]')
+            ]);
+            const merged = mergeMusicLibraries(
+                (remote.songs || []).filter(song => !deletedIds.has(musicSongSyncId(song))),
+                local.filter(song => !deletedIds.has(musicSongSyncId(song)))
+            );
+            const remoteView = mergeMusicLibraries(remote.songs, []);
+            const mergedDeletedIds = [...deletedIds].sort();
+            const remoteDeletedIds = (Array.isArray(remote.deletedIds) ? remote.deletedIds : []).slice().sort();
+            const changed = JSON.stringify(merged) !== JSON.stringify(remoteView.filter(song => !deletedIds.has(musicSongSyncId(song)))) || JSON.stringify(mergedDeletedIds) !== JSON.stringify(remoteDeletedIds);
+            applyingCloudLibrary = true;
+            saveMusicDatabase(merged, { fromCloud: true });
+            applyingCloudLibrary = false;
+            if (changed) {
+                const writeResponse = await fetch(`${SYNC_API}/library`, {
+                    method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ songs: merged, deletedIds: mergedDeletedIds })
+                });
+                if (writeResponse.status === 401) {
+                    localStorage.removeItem('21k_owner_token');
+                    librarySyncReady = false;
+                    setLibrarySyncStatus('รหัสควบคุมไม่ถูกต้อง กดซิงก์เพื่อกรอกใหม่', '#f87171');
+                    return;
+                }
+                if (!writeResponse.ok) throw new Error(`บันทึกคลังส่วนกลางไม่ได้ (${writeResponse.status})`);
+            }
+            librarySyncReady = true;
+            setLibrarySyncStatus(`☁️ ซิงก์แล้ว • ${merged.length} เพลง`, 'var(--primary-emerald)');
+            renderSongs();
+        } catch (error) {
+            applyingCloudLibrary = false;
+            setLibrarySyncStatus(`ซิงก์ไม่สำเร็จ: ${error.message}`, '#f87171');
+            console.warn('Library sync failed', error);
+        } finally {
+            librarySyncBusy = false;
+        }
+    }
+
+    function initializeLibraryCloudSync(force = false) {
+        if (librarySyncInitPromise && !force) return librarySyncInitPromise;
+        librarySyncInitPromise = syncMusicLibraryWithCloud().then(() => {
+            if (librarySyncReady && !librarySyncTimer) librarySyncTimer = setInterval(syncMusicLibraryWithCloud, 12000);
+        }).finally(() => { librarySyncInitPromise = null; });
+        return librarySyncInitPromise;
+    }
 
     let pendingOwnerTokenResolve = null;
 
@@ -1127,7 +1269,8 @@
             news: newsChecked ? newsChecked.value : 'พอใช้',
             happy: happyChecked ? happyChecked.value : 'พอใช้',
             usageCount: usageCount,
-            isStarred: isStarred
+            isStarred: isStarred,
+            _syncId: editIndex >= 0 && songs[editIndex] ? musicSongSyncId(songs[editIndex]) : undefined
         };
 
         if (editIndex >= 0) {
@@ -1138,7 +1281,7 @@
             alert('บันทึกเพลงใหม่เรียบร้อย!');
         }
 
-        localStorage.setItem('music_database', JSON.stringify(songs));
+        saveMusicDatabase(songs);
         resetForm();
         switchTab('home');
     }
@@ -1223,7 +1366,7 @@
     function toggleStarSong(index) {
         let songs = JSON.parse(localStorage.getItem('music_database') || '[]');
         songs[index].isStarred = !songs[index].isStarred;
-        localStorage.setItem('music_database', JSON.stringify(songs));
+        saveMusicDatabase(songs);
         filterSongs();
     }
 
@@ -1599,7 +1742,7 @@
             let found = songs.find(s => s.title === pSong.title && s.songKey === pSong.songKey);
             if (found) { found.usageCount = (found.usageCount || 0) + 1; }
         });
-        localStorage.setItem('music_database', JSON.stringify(songs));
+        saveMusicDatabase(songs);
         alert('บันทึกโชว์สำเร็จ!');
         switchTab('flow');
     }
@@ -1942,7 +2085,7 @@
         if (confirm('คุณต้องการลบเพลงนี้จากคลังใช่หรือไม่?')) {
             let songs = JSON.parse(localStorage.getItem('music_database') || '[]');
             songs.splice(index, 1);
-            localStorage.setItem('music_database', JSON.stringify(songs));
+            saveMusicDatabase(songs);
             renderSongs();
         }
     }
@@ -1975,7 +2118,7 @@
             try {
                 let backupData = JSON.parse(e.target.result);
                 if (backupData.songs && Array.isArray(backupData.songs)) {
-                    localStorage.setItem('music_database', JSON.stringify(backupData.songs));
+                    saveMusicDatabase(backupData.songs);
                     if (backupData.grooves) localStorage.setItem('custom_grooves', JSON.stringify(backupData.grooves));
                     if (backupData.crowdControls) localStorage.setItem('custom_crowd_controls', JSON.stringify(backupData.crowdControls));
                     if (backupData.showHistory) localStorage.setItem('show_history', JSON.stringify(backupData.showHistory));
@@ -2010,9 +2153,10 @@
             viewerPollTimer = setInterval(() => loadViewerState(showId).catch(error => console.warn(error)), 4000);
         } else {
             if (!localStorage.getItem('music_database')) {
-                localStorage.setItem('music_database', JSON.stringify([]));
+                saveMusicDatabase([]);
             }
             renderSongs();
+            initializeLibraryCloudSync();
         }
     };
 
