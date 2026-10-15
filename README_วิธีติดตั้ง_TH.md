@@ -8,7 +8,7 @@
 
 ## ตั้งค่าเว็บไซต์
 
-1. ใส่ URL Cloudflare Worker จริงใน `config.js` แทนข้อความ `ใส่_URL_WORKER_ของคุณ_ตรงนี้` (ไม่ต้องใส่ `/show` ต่อท้าย)
+1. ในชุดนี้ใส่ URL Worker `https://21k-list-sync.zieawlovepanda.workers.dev` ให้แล้ว (ไม่ต้องเติม `/show` ต่อท้าย)
 2. อัปโหลด `index.html` และ `config.js` ไปไว้ในโฟลเดอร์เดียวกันบน GitHub Pages
 3. อย่าอัปโหลดกุญแจ JSONBin หรือรหัสลับลง GitHub
 
