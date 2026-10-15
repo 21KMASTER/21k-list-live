@@ -6,7 +6,6 @@
     <title>21K List - Live Setlist & Chord Prompter Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="./config.js"></script>
     <style>
         :root {
             --bg-color: #060907;
@@ -97,12 +96,6 @@
             background: var(--bg-color); padding: 11px 15px; border-radius: 12px;
             margin-bottom: 9px; border: 1px solid var(--border-color); font-size: 13px;
         }
-        .playlist-order-controls { display:flex; gap:5px; margin-left:8px; }
-        .playlist-move-btn { border:1px solid var(--border-color); border-radius:7px; background:var(--surface-hover); color:#fff; padding:5px 9px; cursor:pointer; font-size:14px; }
-        .playlist-move-btn:disabled { opacity:.35; cursor:not-allowed; }
-        .setlist-song-item[draggable="true"] { cursor:grab; }
-        .setlist-song-item.dragging { opacity:.45; }
-        .setlist-song-item.drop-target { border:2px dashed var(--accent-gold); }
         .usage-badge { background: #d97706; color: #fff; padding: 2px 7px; border-radius: 6px; font-size: 10px; font-weight: 700; }
         .mode-badge-live { background: #10b981; color: #000; padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 800; }
         .mode-badge-data { background: #3b82f6; color: #fff; padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 800; }
@@ -132,6 +125,11 @@
         .library-view-titles .video-title-only { display: flex; }
         .library-view-titles .video-card:hover { transform: none; }
         .video-title-only { display: none; min-height: 48px; padding: 10px 12px; align-items: center; color: var(--text-main); font-weight: 700; }
+        .live-requests-panel { margin: 14px 16px; padding: 16px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 14px; }
+        .live-requests-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 10px; margin-top: 10px; }
+        .live-request-card { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 11px; overflow-wrap: anywhere; }
+        .textarea-form-control { width: 100%; padding: 11px 14px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-main); box-sizing: border-box; font: inherit; font-size: 13px; resize: vertical; }
+
         .video-card {
             background: var(--surface-card); border-radius: 18px; overflow: hidden;
             border: 1px solid var(--border-color); display: flex; flex-direction: column;
@@ -205,12 +203,6 @@
             width: 100%; padding: 11px 14px; background: var(--bg-color); border: 1px solid var(--border-color);
             border-radius: 12px; color: var(--text-main); box-sizing: border-box; font-size: 13px; outline: none; transition: 0.2s;
         }
-        textarea.form-control { width: 100%; padding: 11px 14px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-main); box-sizing: border-box; font: inherit; font-size: 13px; resize: vertical; }
-        .library-view-picker { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin: 12px 0; color: var(--text-secondary); font-size: 13px; }
-        .favorite-playlist-note { white-space: normal; overflow-wrap: anywhere; background: rgba(16,185,129,0.08); border-left: 3px solid var(--primary-emerald); padding: 12px; border-radius: 8px; margin: 0 0 15px; color: var(--text-main); font-size: 13px; line-height: 1.6; }
-        .live-requests-panel { margin: 14px 16px; padding: 16px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 14px; }
-        .live-requests-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 10px; margin-top: 10px; }
-        .live-request-card { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 11px; overflow-wrap: anywhere; }
         .img-preview { max-width: 100%; max-height: 220px; margin-top: 10px; border-radius: 10px; border: 1px solid var(--border-color); display: none; object-fit: contain; background: #000; }
 
         .radio-group { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -265,12 +257,10 @@
         .btn-restore { background: #2563eb; color: white; border: none; padding: 11px 22px; border-radius: 10px; cursor: pointer; font-weight: 700; margin: 5px; }
 
         /* Live Prompter Overlay */
-        .live-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(4, 8, 6, 0.99); z-index: 9999; flex-direction: column; justify-content: space-between; padding: 25px; box-sizing: border-box; overflow-y: auto; }
+        .live-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(4, 8, 6, 0.99); z-index: 9999; flex-direction: column; justify-content: space-between; padding: 25px; overflow-y:auto; box-sizing: border-box; }
         .live-overlay.active { display: flex; }
         
         .live-top-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
-        .live-top-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
-        @media (max-width: 700px) { .live-top-bar { flex-wrap:wrap; gap:10px; } .live-top-actions { flex:1; } .live-top-actions .qr-btn { padding:8px 10px; font-size:12px; } }
         .live-main-grid { display: grid; grid-template-columns: 2.2fr 1.2fr; gap: 20px; align-items: stretch; flex: 1; margin-top: 15px; overflow: hidden; }
         @media (max-width: 900px) { .live-main-grid { grid-template-columns: 1fr; overflow-y: auto; } }
 
@@ -294,11 +284,6 @@
         }
 
         .live-bottom-controls { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 10px; }
-        .live-audio-panel { margin-top:12px; padding:12px; border:1px solid var(--border-color); border-radius:12px; background:rgba(0,0,0,.25); }
-        .live-audio-tracks { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
-        .live-audio-tracks button { border:1px solid #2563eb; border-radius:8px; padding:7px 12px; color:#fff; background:#172554; cursor:pointer; }
-        .live-audio-tracks button.active { background:#2563eb; }
-        .live-audio-player { display:block; width:100%; max-width:560px; height:42px; }
         .control-btn { background: var(--surface-hover); color: #fff; border: 1px solid var(--border-color); padding: 12px 24px; font-size: 16px; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .control-btn:hover { background: var(--primary-emerald); color: #000; border-color: var(--primary-emerald); }
         .close-live-btn { background: #ef4444; color: #fff; border: none; padding: 10px 20px; font-size: 14px; border-radius: 10px; cursor: pointer; font-weight: bold; }
@@ -373,7 +358,7 @@
                 <select id="filterHappy" class="filter-select" onchange="filterSongs()"><option value="">ทุก Happy</option><option value="น้อยมาก">น้อยมาก</option><option value="น้อย">น้อย</option><option value="พอใช้">พอใช้</option><option value="มาก">มาก</option><option value="มากที่สุด">มากที่สุด</option></select>
             </div>
         </div>
-        <div class="library-view-picker">
+        <div style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin:12px 0; color:var(--text-secondary); font-size:13px;">
             <label for="libraryDisplayMode" style="margin:0;">รูปแบบคลังเพลง</label>
             <select id="libraryDisplayMode" class="filter-select" onchange="setLibraryDisplayMode(this.value)" aria-label="เลือกรูปแบบการแสดงคลังเพลง">
                 <option value="normal">ปกติ</option><option value="medium">กลาง</option><option value="small">เล็ก</option><option value="titles">แสดงชื่อเพลงอย่างเดียว</option>
@@ -396,14 +381,15 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 15px; max-width: 900px; margin: 0 auto 20px auto; flex-wrap: wrap;">
+            <div style="display:flex; gap:15px; max-width:900px; margin:0 auto 20px auto; flex-wrap:wrap;">
+                <div class="form-group" style="flex:1 1 100%; margin-bottom:0;">
+                    <label for="favoritePlaylistNote">ความคิดเห็น / บันทึกช่วยจำ (เก็บไว้กับ Playlist โปรด)</label>
+                    <textarea id="favoritePlaylistNote" class="textarea-form-control" rows="3" placeholder="เช่น เกิดอะไรขึ้นในโชว์นี้, เพลงไหนควรแก้ไข, หรือช่วงไหนสนุกเป็นพิเศษ"></textarea>
+                </div>
+
                 <div class="form-group" style="flex: 1; margin-bottom: 0;">
                     <label for="showTitleInput">ชื่อโชว์ / ชื่อเซ็ตลิสต์:</label>
                     <input type="text" id="showTitleInput" placeholder="เช่น งานแต่งงาน / คอนเสิร์ต 3 ชั่วโมงยาวๆ">
-                </div>
-                <div class="form-group" style="flex: 1 1 100%; margin-bottom: 0;">
-                    <label for="favoritePlaylistNote">ความคิดเห็น / บันทึกช่วยจำ (เก็บไว้กับ Playlist โปรด)</label>
-                    <textarea id="favoritePlaylistNote" class="form-control" rows="3" placeholder="เช่น เกิดอะไรขึ้นในโชว์นี้, เพลงไหนควรแก้ไข, หรือช่วงไหนสนุกเป็นพิเศษ"></textarea>
                 </div>
                 <div style="display: flex; align-items: flex-end; gap: 8px;">
                     <button type="button" class="btn" style="background:var(--accent-gold); color:#000; font-weight:bold; height:43px;" onclick="saveFavoritePlaylist()">⭐ บันทึกเป็น Playlist โปรด</button>
@@ -416,7 +402,6 @@
                         <span>🎶 เพลงใน Setlist ปัจจุบัน</span>
                         <span id="playlistCountBadge" style="background:var(--primary-emerald); color:#000; padding:2px 8px; border-radius:10px; font-size:12px;">0 เพลง</span>
                     </h4>
-                    <p style="color:var(--text-secondary); font-size:12px; margin-top:0;">ลากแถวเพลงไปวางเพื่อจัดลำดับได้อิสระ หรือใช้ปุ่ม ⬆️/⬇️ เพื่อขยับทีละตำแหน่ง</p>
                     <div id="currentPlaylistContainer">
                         <p style="color:var(--text-secondary); text-align:center; padding:20px;">ยังไม่มีเพลงในเซ็ตลิสต์</p>
                     </div>
@@ -649,7 +634,7 @@
         <div>
             <span style="background:var(--accent-gold); color:#000; padding:6px 14px; border-radius:8px; font-weight:bold; font-size:14px;" id="liveQueueIndicator">เพลงที่ 1 จาก 1</span>
         </div>
-        <div class="live-top-actions">
+        <div style="display:flex; gap:10px; align-items:center;">
             <button class="qr-btn" id="addSongLiveBtn" onclick="openAddSongLiveModal()">➕ เพิ่มเพลงระหว่างโชว์</button>
             <button class="qr-btn" id="openQrModalBtn" onclick="openQRCodeModal()">📱 ลิงก์ QR Code ให้เพื่อนดูจอสด</button>
             <div style="font-size:18px; font-weight:bold; color:var(--primary-emerald);">🔴 21K LIVE PROMPTER</div>
@@ -673,10 +658,10 @@
             </div>
 
             <div style="font-size:14px; color:var(--text-secondary);" id="liveCurrentMeta">Groove: - | Power: - | คุมคน: -</div>
-            <div id="liveAudioPanel" class="live-audio-panel" style="display:none;">
+            <div id="liveAudioPanel" style="display:none; width:min(620px,100%); margin-top:10px; padding:12px; background:var(--bg-color); border:1px solid var(--border-color); border-radius:12px;">
                 <div style="font-weight:bold; color:var(--primary-emerald);">🎵 ฟัง MP3 ของเพลงนี้</div>
-                <div id="liveAudioTracks" class="live-audio-tracks"></div>
-                <audio id="liveAudioPlayer" class="live-audio-player" controls preload="none" controlsList="nodownload"></audio>
+                <div id="liveAudioTracks" style="display:flex; gap:8px; margin:8px 0;"></div>
+                <audio id="liveAudioPlayer" controls preload="none" controlsList="nodownload" style="width:100%;"></audio>
                 <div id="liveAudioMessage" style="font-size:12px; color:var(--text-secondary); margin-top:6px;">กดปุ่มเล่นเพื่อฟัง</div>
             </div>
         </div>
@@ -725,7 +710,7 @@
 <div id="qrModal" class="modal-overlay">
     <div class="modal-box">
         <h3 style="color:var(--primary-emerald); margin-top:0;">📱 ลิงก์สำหรับเพื่อนดูหน้าจอสด</h3>
-        <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">ลิงก์นี้เปิดได้เฉพาะหน้าจอ Live ข้อมูลจะซิงก์ผ่านบริการกลางที่ตั้งค่าไว้</p>
+        <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">ลิงก์นี้เปิดได้เฉพาะหน้าจอ Live ข้อมูลจะซิงก์ผ่าน Cloudflare Worker ที่ตั้งค่าไว้</p>
         
         <div id="qrcode" style="display:inline-block; background:#fff; padding:10px; border-radius:12px; margin-bottom:10px;"></div>
 
@@ -739,6 +724,10 @@
 </div>
 
 <script>
+
+
+
+
 
     let myEnergyChart = null;
     let currentLiveIndex = 0;
@@ -773,7 +762,7 @@
         if (!SYNC_API) throw new Error('ยังไม่ได้ตั้งค่า URL ของ Cloudflare Worker ใน config.js');
         const token = getOwnerToken();
         if (!token) throw new Error('ต้องมีรหัสควบคุมเพื่ออัปเดตข้อมูลโชว์');
-        const response = await fetch(`${SYNC_API}/show`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify(livePayload()) });
+        const response = await fetch(`${SYNC_API}/show?id=${encodeURIComponent(activeShowId)}`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify(livePayload()) });
         if (!response.ok) throw new Error(`ซิงก์ไม่สำเร็จ (${response.status})`);
     }
 
@@ -1983,6 +1972,7 @@
             renderSongs();
         }
     };
+
 
 </script>
 
