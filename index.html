@@ -119,6 +119,19 @@
         .btn-random:hover { opacity: 0.9; transform: translateY(-1px); }
 
         .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 22px; }
+        .video-grid.library-view-medium { grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 16px; }
+        .library-view-medium .video-thumb { height: 105px; }
+        .library-view-medium .video-info { padding: 10px; }
+        .video-grid.library-view-small { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
+        .library-view-small .video-thumb { height: 82px; padding: 8px; }
+        .library-view-small .video-title { font-size: 14px; }
+        .library-view-small .video-info { display: none; }
+        .library-view-small .card-footer { padding: 7px 5px; font-size: 10px; }
+        .video-grid.library-view-titles { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+        .library-view-titles .video-thumb, .library-view-titles .video-info { display: none; }
+        .library-view-titles .video-title-only { display: flex; }
+        .library-view-titles .video-card:hover { transform: none; }
+        .video-title-only { display: none; min-height: 48px; padding: 10px 12px; align-items: center; color: var(--text-main); font-weight: 700; }
         .video-card {
             background: var(--surface-card); border-radius: 18px; overflow: hidden;
             border: 1px solid var(--border-color); display: flex; flex-direction: column;
@@ -192,6 +205,12 @@
             width: 100%; padding: 11px 14px; background: var(--bg-color); border: 1px solid var(--border-color);
             border-radius: 12px; color: var(--text-main); box-sizing: border-box; font-size: 13px; outline: none; transition: 0.2s;
         }
+        textarea.form-control { width: 100%; padding: 11px 14px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; color: var(--text-main); box-sizing: border-box; font: inherit; font-size: 13px; resize: vertical; }
+        .library-view-picker { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin: 12px 0; color: var(--text-secondary); font-size: 13px; }
+        .favorite-playlist-note { white-space: normal; overflow-wrap: anywhere; background: rgba(16,185,129,0.08); border-left: 3px solid var(--primary-emerald); padding: 12px; border-radius: 8px; margin: 0 0 15px; color: var(--text-main); font-size: 13px; line-height: 1.6; }
+        .live-requests-panel { margin: 14px 16px; padding: 16px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 14px; }
+        .live-requests-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 10px; margin-top: 10px; }
+        .live-request-card { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 11px; overflow-wrap: anywhere; }
         .img-preview { max-width: 100%; max-height: 220px; margin-top: 10px; border-radius: 10px; border: 1px solid var(--border-color); display: none; object-fit: contain; background: #000; }
 
         .radio-group { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -246,7 +265,7 @@
         .btn-restore { background: #2563eb; color: white; border: none; padding: 11px 22px; border-radius: 10px; cursor: pointer; font-weight: 700; margin: 5px; }
 
         /* Live Prompter Overlay */
-        .live-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(4, 8, 6, 0.99); z-index: 9999; flex-direction: column; justify-content: space-between; padding: 25px; box-sizing: border-box; }
+        .live-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(4, 8, 6, 0.99); z-index: 9999; flex-direction: column; justify-content: space-between; padding: 25px; box-sizing: border-box; overflow-y: auto; }
         .live-overlay.active { display: flex; }
         
         .live-top-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
@@ -354,6 +373,12 @@
                 <select id="filterHappy" class="filter-select" onchange="filterSongs()"><option value="">ทุก Happy</option><option value="น้อยมาก">น้อยมาก</option><option value="น้อย">น้อย</option><option value="พอใช้">พอใช้</option><option value="มาก">มาก</option><option value="มากที่สุด">มากที่สุด</option></select>
             </div>
         </div>
+        <div class="library-view-picker">
+            <label for="libraryDisplayMode" style="margin:0;">รูปแบบคลังเพลง</label>
+            <select id="libraryDisplayMode" class="filter-select" onchange="setLibraryDisplayMode(this.value)" aria-label="เลือกรูปแบบการแสดงคลังเพลง">
+                <option value="normal">ปกติ</option><option value="medium">กลาง</option><option value="small">เล็ก</option><option value="titles">แสดงชื่อเพลงอย่างเดียว</option>
+            </select>
+        </div>
         <div class="video-grid" id="videoGrid"></div>
     </div>
 
@@ -371,10 +396,14 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 15px; max-width: 650px; margin: 0 auto 20px auto; flex-wrap: wrap;">
+            <div style="display: flex; gap: 15px; max-width: 900px; margin: 0 auto 20px auto; flex-wrap: wrap;">
                 <div class="form-group" style="flex: 1; margin-bottom: 0;">
                     <label for="showTitleInput">ชื่อโชว์ / ชื่อเซ็ตลิสต์:</label>
                     <input type="text" id="showTitleInput" placeholder="เช่น งานแต่งงาน / คอนเสิร์ต 3 ชั่วโมงยาวๆ">
+                </div>
+                <div class="form-group" style="flex: 1 1 100%; margin-bottom: 0;">
+                    <label for="favoritePlaylistNote">ความคิดเห็น / บันทึกช่วยจำ (เก็บไว้กับ Playlist โปรด)</label>
+                    <textarea id="favoritePlaylistNote" class="form-control" rows="3" placeholder="เช่น เกิดอะไรขึ้นในโชว์นี้, เพลงไหนควรแก้ไข, หรือช่วงไหนสนุกเป็นพิเศษ"></textarea>
                 </div>
                 <div style="display: flex; align-items: flex-end; gap: 8px;">
                     <button type="button" class="btn" style="background:var(--accent-gold); color:#000; font-weight:bold; height:43px;" onclick="saveFavoritePlaylist()">⭐ บันทึกเป็น Playlist โปรด</button>
@@ -663,6 +692,22 @@
         <div style="color:var(--text-secondary); font-size:14px;">💡 กด Spacebar หรือ ลูกศร (← / →) เพื่อเปลี่ยนเพลงบนเวที</div>
         <button class="control-btn" onclick="nextLiveSong()">เพลงถัดไป ➡️</button>
     </div>
+    <section class="live-requests-panel" id="liveRequestsPanel" style="display:none;">
+        <h3 style="margin:0; color:var(--accent-gold);">🎤 เพลงที่เพื่อน ๆ ขอ (ไอเดียไว้แกะซ้อม)</h3>
+        <div style="color:var(--text-secondary); font-size:12px; margin-top:4px;">รายการนี้บันทึกกับโชว์ และจะแสดงให้ทีมเห็น</div>
+        <div id="liveRequestsList" class="live-requests-list"></div>
+        <div id="liveRequestsEmpty" style="color:var(--text-secondary); font-size:13px; margin-top:10px;">ยังไม่มีคำขอเพลง</div>
+    </section>
+    <section class="live-requests-panel" id="viewerRequestPanel" style="display:none;">
+        <h3 style="margin:0 0 10px; color:var(--primary-emerald);">🎵 ฝากเพลงที่อยากฟัง</h3>
+        <form onsubmit="submitLiveSongRequest(event)" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px;">
+            <input id="requestSongTitle" type="text" maxlength="120" required placeholder="ชื่อเพลงที่อยากฟัง">
+            <input id="requestFriendName" type="text" maxlength="60" placeholder="ชื่อเล่น (ไม่ใส่ก็ได้)">
+            <input id="requestSongNote" type="text" maxlength="300" placeholder="หมายเหตุหรือไอเดีย เช่น ศิลปิน / เวอร์ชัน">
+            <button type="submit" class="btn" style="background:var(--primary-emerald); color:#00150e; font-weight:bold;">ส่งคำขอเพลง</button>
+        </form>
+        <div id="requestSubmitMessage" role="status" style="font-size:13px; margin-top:8px; color:var(--text-secondary);"></div>
+    </section>
 </div>
 
 <div id="addSongLiveModal" class="modal-overlay">
@@ -703,6 +748,8 @@
     let activeShowId = null;
     let activeAudioTrack = 1;
     let currentAudioSource = '';
+    let liveRequestsPollTimer = null;
+    let liveRequestsCache = [];
 
     function getOwnerToken() {
         let token = localStorage.getItem('21k_owner_token');
@@ -719,7 +766,7 @@
             image:s.image || '', groove:s.groove || '', speed:s.speed || '', power:s.power || '',
             crowdControl:s.crowdControl || '', liveMode:s.liveMode || 'Live',
             audio1:s.audio1 || '', audio2:s.audio2 || ''
-        })), currentIndex: currentLiveIndex, updatedAt: Date.now() };
+        })), currentIndex: currentLiveIndex, requests: liveRequestsCache, updatedAt: Date.now() };
     }
 
     async function publishLiveState() {
@@ -743,8 +790,74 @@
         const state = await response.json();
         if (state.showId !== showId || !Array.isArray(state.playlist) || !state.playlist.length) throw new Error('ข้อมูลโชว์ไม่ถูกต้อง');
         activePlaylistCache = state.playlist;
+        liveRequestsCache = Array.isArray(state.requests) ? state.requests : liveRequestsCache;
+        renderLiveSongRequests();
         currentLiveIndex = Math.max(0, Math.min(state.currentIndex || 0, activePlaylistCache.length - 1));
         updateLivePropterScreen();
+    }
+
+    function renderLiveSongRequests() {
+        const panel = document.getElementById('liveRequestsPanel');
+        const list = document.getElementById('liveRequestsList');
+        const empty = document.getElementById('liveRequestsEmpty');
+        if (!panel || !list || !empty) return;
+        const isViewerPage = new URLSearchParams(window.location.search).has('show');
+        panel.style.display = !isViewerPage && activeShowId ? 'block' : 'none';
+        list.innerHTML = '';
+        empty.style.display = liveRequestsCache.length ? 'none' : 'block';
+        liveRequestsCache.slice().reverse().forEach(request => {
+            const card = document.createElement('div');
+            card.className = 'live-request-card';
+            const title = document.createElement('strong');
+            title.textContent = `🎵 ${request.song || 'ไม่ระบุชื่อเพลง'}`;
+            const byline = document.createElement('div');
+            byline.style.cssText = 'font-size:12px;color:var(--accent-gold);margin-top:4px;';
+            byline.textContent = `ขอโดย ${request.name || 'เพื่อน'}${request.date ? ` • ${request.date}` : ''}`;
+            card.append(title, byline);
+            if (request.note) {
+                const note = document.createElement('div');
+                note.style.cssText = 'font-size:13px;margin-top:6px;';
+                note.textContent = request.note;
+                card.appendChild(note);
+            }
+            list.appendChild(card);
+        });
+    }
+
+    async function submitLiveSongRequest(event) {
+        event.preventDefault();
+        const message = document.getElementById('requestSubmitMessage');
+        const showId = new URLSearchParams(window.location.search).get('show');
+        if (!SYNC_API || !showId) { message.textContent = 'ส่งคำขอไม่ได้ กรุณาเปิดลิงก์ Live ของโชว์'; return; }
+        const request = {
+            song: document.getElementById('requestSongTitle').value.trim(),
+            name: document.getElementById('requestFriendName').value.trim(),
+            note: document.getElementById('requestSongNote').value.trim()
+        };
+        if (!request.song) return;
+        message.textContent = 'กำลังส่งคำขอ…';
+        try {
+            const response = await fetch(`${SYNC_API}/requests?id=${encodeURIComponent(showId)}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request)
+            });
+            if (!response.ok) throw new Error('ระบบรับคำขอยังไม่ได้ตั้งค่า หรือเชื่อมต่อไม่สำเร็จ');
+            document.getElementById('requestSongTitle').value = '';
+            document.getElementById('requestFriendName').value = '';
+            document.getElementById('requestSongNote').value = '';
+            message.textContent = 'ส่งคำขอแล้ว ขอบคุณที่ช่วยแชร์ไอเดียเพลงครับ!';
+            await refreshLiveSongRequests(showId);
+        } catch (error) { message.textContent = error.message; }
+    }
+
+    async function refreshLiveSongRequests(showId = activeShowId) {
+        if (!SYNC_API || !showId) return;
+        try {
+            const response = await fetch(`${SYNC_API}/requests?id=${encodeURIComponent(showId)}`, { cache: 'no-store' });
+            if (!response.ok) return;
+            const data = await response.json();
+            liveRequestsCache = Array.isArray(data.requests) ? data.requests : [];
+            renderLiveSongRequests();
+        } catch (error) { console.warn('โหลดรายการคำขอเพลงไม่สำเร็จ', error); }
     }
     let activePlaylistCache = [];
 
@@ -1129,6 +1242,13 @@
 
     function displayFilteredSongs(songs) {
         const grid = document.getElementById('videoGrid');
+        const displayMode = localStorage.getItem('library_display_mode') || 'normal';
+        const allowedDisplayModes = ['normal', 'medium', 'small', 'titles'];
+        const safeDisplayMode = allowedDisplayModes.includes(displayMode) ? displayMode : 'normal';
+        grid.classList.remove('library-view-normal', 'library-view-medium', 'library-view-small', 'library-view-titles');
+        grid.classList.add(`library-view-${safeDisplayMode}`);
+        const displayPicker = document.getElementById('libraryDisplayMode');
+        if (displayPicker) displayPicker.value = safeDisplayMode;
         grid.innerHTML = '';
         let grooves = getGrooves();
         let allSongs = JSON.parse(localStorage.getItem('music_database') || '[]');
@@ -1151,6 +1271,7 @@
             let modeBadge = song.liveMode === 'Data' ? '<span class="mode-badge-data">[ Data ]</span>' : '<span class="mode-badge-live">[ Live ]</span>';
 
             card.innerHTML = `
+                <div class="video-title-only">🎵 ${song.title} ${modeBadge}</div>
                 <div>
                     <div class="video-thumb" style="${bgStyle}">
                         <div class="thumb-overlay"></div>
@@ -1187,6 +1308,19 @@
             `;
             grid.appendChild(card);
         });
+    }
+
+    function setLibraryDisplayMode(mode) {
+        const allowedModes = ['normal', 'medium', 'small', 'titles'];
+        if (!allowedModes.includes(mode)) mode = 'normal';
+        localStorage.setItem('library_display_mode', mode);
+        filterSongs();
+    }
+
+    function escapeHTML(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[character]);
     }
 
     function getCurrentPlaylist() {
@@ -1313,8 +1447,9 @@
             return;
         }
         let title = document.getElementById('showTitleInput').value.trim() || `Playlist โปรด ${new Date().toLocaleDateString('th-TH')}`;
+        let note = document.getElementById('favoritePlaylistNote').value.trim();
         let savedList = JSON.parse(localStorage.getItem('starred_playlists') || '[]');
-        savedList.unshift({ id: Date.now(), title: title, date: new Date().toLocaleString('th-TH'), songs: playlist });
+        savedList.unshift({ id: Date.now(), title: title, note: note, date: new Date().toLocaleString('th-TH'), songs: playlist });
         localStorage.setItem('starred_playlists', JSON.stringify(savedList));
         alert(`บันทึก "${title}" เป็น Playlist โปรดเรียบร้อย!`);
         switchTab('savedPlaylists');
@@ -1332,6 +1467,7 @@
 
         savedList.forEach((item, index) => {
             let songListHTML = item.songs.map((s, i) => `<span style="background:var(--bg-color); border:1px solid var(--border-color); padding:3px 8px; border-radius:6px; font-size:11px;">#${i+1} ${s.title} (${s.songKey})</span>`).join('');
+            let noteHTML = item.note ? `<div class="favorite-playlist-note"><b>📝 ความคิดเห็น:</b><br>${escapeHTML(item.note).replace(/\n/g, '<br>')}</div>` : '';
             container.innerHTML += `
                 <div style="background:var(--bg-color); border:1px solid var(--border-color); padding:20px; border-radius:16px; margin-bottom:18px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -1339,6 +1475,7 @@
                         <span style="font-size:12px; color:var(--text-secondary);">${item.date} (${item.songs.length} เพลง)</span>
                     </div>
                     <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:15px;">${songListHTML}</div>
+                    ${noteHTML}
                     <div style="display:flex; gap:10px;">
                         <button type="button" class="btn" style="background:var(--primary-emerald); color:#000; font-weight:bold;" onclick="loadFavoritePlaylist(${index})">📂 โหลดเซ็ตลิสต์นี้มาใช้งาน</button>
                         <button type="button" class="btn" style="background:#ef4444; color:#fff;" onclick="deleteFavoritePlaylist(${index})">🗑️ ลบ Playlist นี้</button>
@@ -1729,6 +1866,11 @@
         catch (error) { activeShowId = null; alert(`เริ่มแชร์ Live ไม่สำเร็จ: ${error.message}`); closeQRCodeModal(); return; }
 
         let baseUrl = window.location.href.split('?')[0].split('#')[0];
+        liveRequestsCache = [];
+        renderLiveSongRequests();
+        await refreshLiveSongRequests(showId);
+        if (liveRequestsPollTimer) clearInterval(liveRequestsPollTimer);
+        liveRequestsPollTimer = setInterval(() => refreshLiveSongRequests(showId), 5000);
         let targetUrl = `${baseUrl}?show=${showId}`;
 
         document.getElementById('shareUrlBox').value = targetUrl;
@@ -1824,6 +1966,8 @@
             document.getElementById('liveOverlay').classList.add('active');
             document.getElementById('openQrModalBtn').style.display = 'none';
             document.getElementById('addSongLiveBtn').style.display = 'none';
+            document.getElementById('viewerRequestPanel').style.display = 'block';
+            document.getElementById('liveRequestsPanel').style.display = 'none';
             document.querySelector('.close-live-btn').style.display = 'none';
             document.querySelector('.live-bottom-controls').style.display = 'none';
             document.getElementById('liveQueueIndicator').innerText = 'กำลังเชื่อมต่อข้อมูลโชว์…';
