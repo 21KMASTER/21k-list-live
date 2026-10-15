@@ -8,7 +8,7 @@
 
 ## ตั้งค่าเว็บไซต์
 
-1. หน้าเว็บและ `config.js` ในชุดนี้ตั้ง URL `https://21k-list-sync.zieawlovepanda.workers.dev` ไว้แล้ว
+1. ในชุดนี้ใส่ URL Worker `https://21k-list-sync.zieawlovepanda.workers.dev` ให้แล้ว (ไม่ต้องเติม `/show` ต่อท้าย)
 2. อัปโหลด `index.html` และ `config.js` ไปไว้ในโฟลเดอร์เดียวกันบน GitHub Pages
 3. อย่าอัปโหลดกุญแจ JSONBin หรือรหัสลับลง GitHub
 
@@ -23,6 +23,6 @@
 
 ## ทดลอง
 
-เพิ่มเพลงเข้า Playlist → เปิดหน้า Live → กด QR → กรอกรหัสเจ้าของ → QR ควรปรากฏ จากนั้นสแกน QR จากโทรศัพท์อีกเครื่องแล้วลองส่งคำขอเพลง
+เพิ่มเพลงเข้า Playlist → เปิดหน้า Live → กด QR → กรอกรหัสควบคุมในช่องบนหน้าเว็บ → QR ควรปรากฏ จากนั้นสแกน QR จากโทรศัพท์อีกเครื่องแล้วลองส่งคำขอเพลง
 
-ค่า URL, Bin ID และรหัสจริงไม่ได้รวมในชุดนี้ ต้องใช้ค่าจากบัญชี Cloudflare/JSONBin ของคุณ
+URL Worker ตั้งค่าไว้แล้ว แต่ Bin ID, Master Key และรหัสควบคุมจริงต้องมาจากบัญชี Cloudflare/JSONBin ของคุณ

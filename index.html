@@ -706,6 +706,19 @@
     </div>
 </div>
 
+<div id="ownerTokenModal" class="modal-overlay">
+    <div class="modal-box" style="width:min(420px, calc(100% - 32px));">
+        <h3 style="margin-top:0; color:var(--primary-emerald);">🔐 รหัสควบคุม Live</h3>
+        <p style="font-size:13px; color:var(--text-secondary);">กรอกรหัสควบคุมที่ตั้งไว้ใน Cloudflare Worker ระบบจะจำรหัสนี้ไว้ในเบราว์เซอร์เครื่องนี้</p>
+        <form onsubmit="submitOwnerToken(event)">
+            <input id="ownerTokenInput" type="password" autocomplete="current-password" required placeholder="รหัสควบคุม" style="width:100%; padding:12px; box-sizing:border-box; margin-bottom:10px;">
+            <div id="ownerTokenMessage" role="status" style="color:#f87171; font-size:12px; min-height:18px;"></div>
+            <button type="submit" class="btn" style="background:var(--primary-emerald); color:#000; font-weight:bold; width:100%;">ยืนยันและแชร์ Live</button>
+            <button type="button" class="btn" onclick="cancelOwnerToken()" style="background:#374151; color:#fff; width:100%; margin-top:8px;">ยกเลิก</button>
+        </form>
+    </div>
+</div>
+
 <!-- Modal QR Code สำหรับแชร์ให้เพื่อน -->
 <div id="qrModal" class="modal-overlay">
     <div class="modal-box">
@@ -740,13 +753,39 @@
     let liveRequestsPollTimer = null;
     let liveRequestsCache = [];
 
+    let pendingOwnerTokenResolve = null;
+
     function getOwnerToken() {
         let token = localStorage.getItem('21k_owner_token');
         if (!token) {
-            token = prompt('กรอกรหัสควบคุมที่ตั้งไว้ใน Cloudflare Worker (เก็บเฉพาะในเบราว์เซอร์เครื่องนี้)');
-            if (token) localStorage.setItem('21k_owner_token', token.trim());
+            return new Promise(resolve => {
+                pendingOwnerTokenResolve = resolve;
+                document.getElementById('ownerTokenInput').value = '';
+                document.getElementById('ownerTokenMessage').textContent = '';
+                document.getElementById('ownerTokenModal').classList.add('active');
+                setTimeout(() => document.getElementById('ownerTokenInput').focus(), 0);
+            });
         }
-        return (token || '').trim();
+        return Promise.resolve(token.trim());
+    }
+
+    function submitOwnerToken(event) {
+        event.preventDefault();
+        const token = document.getElementById('ownerTokenInput').value.trim();
+        if (!token) {
+            document.getElementById('ownerTokenMessage').textContent = 'กรุณากรอกรหัสควบคุมก่อน';
+            return;
+        }
+        localStorage.setItem('21k_owner_token', token);
+        document.getElementById('ownerTokenModal').classList.remove('active');
+        if (pendingOwnerTokenResolve) pendingOwnerTokenResolve(token);
+        pendingOwnerTokenResolve = null;
+    }
+
+    function cancelOwnerToken() {
+        document.getElementById('ownerTokenModal').classList.remove('active');
+        if (pendingOwnerTokenResolve) pendingOwnerTokenResolve('');
+        pendingOwnerTokenResolve = null;
     }
 
     function livePayload() {
@@ -760,9 +799,13 @@
 
     async function publishLiveState() {
         if (!SYNC_API) throw new Error('ยังไม่ได้ตั้งค่า URL ของ Cloudflare Worker ใน config.js');
-        const token = getOwnerToken();
+        const token = await getOwnerToken();
         if (!token) throw new Error('ต้องมีรหัสควบคุมเพื่ออัปเดตข้อมูลโชว์');
         const response = await fetch(`${SYNC_API}/show?id=${encodeURIComponent(activeShowId)}`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify(livePayload()) });
+        if (response.status === 401) {
+            localStorage.removeItem('21k_owner_token');
+            throw new Error('รหัสควบคุมไม่ถูกต้อง กรุณากดสร้าง QR อีกครั้งแล้วกรอกรหัสใหม่');
+        }
         if (!response.ok) throw new Error(`ซิงก์ไม่สำเร็จ (${response.status})`);
     }
 
