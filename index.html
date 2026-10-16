@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>21K List - Live Setlist & Chord Prompter Pro</title>
+    <meta name="theme-color" content="#07100c">
+    <link rel="icon" type="image/svg+xml" href="./icon-21k.svg">
+    <link rel="apple-touch-icon" href="./icon-21k.svg">
+    <link rel="manifest" href="./manifest.webmanifest">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -36,11 +40,11 @@
         }
         .app-brand { display: flex; align-items: center; gap: 14px; }
         .app-logo-icon {
-            width: 48px; height: 48px; background: linear-gradient(135deg, var(--primary-emerald), #047857);
-            border-radius: 14px; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); border: 1px solid rgba(255,255,255,0.15);
+            width: 54px; height: 54px; background: radial-gradient(circle at 30% 20%, #1b4936, #07100c 70%);
+            border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 18px rgba(0,0,0,.5), inset 0 0 0 1px rgba(251,191,36,.5);
         }
-        .app-logo-icon span { font-size: 24px; }
+        .app-logo-icon span { font-size: 21px; font-weight: 900; letter-spacing: -1.5px; color:#f6e2a4; font-family: Georgia,serif; text-shadow:0 1px 10px rgba(251,191,36,.25); }
         .app-title-group h1 {
             margin: 0; font-size: 26px; font-weight: 900; letter-spacing: 1px; color: #fff;
             display: flex; align-items: center; gap: 8px;
@@ -115,11 +119,6 @@
         .video-grid.library-view-medium { grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 16px; }
         .library-view-medium .video-thumb { height: 105px; }
         .library-view-medium .video-info { padding: 10px; }
-        .video-grid.library-view-small { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
-        .library-view-small .video-thumb { height: 82px; padding: 8px; }
-        .library-view-small .video-title { font-size: 14px; }
-        .library-view-small .video-info { display: none; }
-        .library-view-small .card-footer { padding: 7px 5px; font-size: 10px; }
         .video-grid.library-view-titles { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
         .library-view-titles .video-thumb, .library-view-titles .video-info { display: none; }
         .library-view-titles .video-title-only { display: flex; }
@@ -257,12 +256,28 @@
         .btn-restore { background: #2563eb; color: white; border: none; padding: 11px 22px; border-radius: 10px; cursor: pointer; font-weight: 700; margin: 5px; }
 
         /* Live Prompter Overlay */
-        .live-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(4, 8, 6, 0.99); z-index: 9999; flex-direction: column; justify-content: space-between; padding: 25px; overflow-y:auto; box-sizing: border-box; }
+        .live-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height:100dvh; background: rgba(4, 8, 6, 0.99); z-index: 9999; flex-direction: column; justify-content: space-between; padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); overflow-y:auto; box-sizing: border-box; }
         .live-overlay.active { display: flex; }
         
         .live-top-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
         .live-main-grid { display: grid; grid-template-columns: 2.2fr 1.2fr; gap: 20px; align-items: stretch; flex: 1; margin-top: 15px; overflow: hidden; }
         @media (max-width: 900px) { .live-main-grid { grid-template-columns: 1fr; overflow-y: auto; } }
+        .library-mode-buttons { display:flex; gap:8px; justify-content:flex-end; margin:12px 0; }
+        .library-mode-button { min-width:48px; min-height:44px; border:1px solid var(--border-color); background:var(--surface-color); color:var(--text-primary); border-radius:10px; font-size:20px; cursor:pointer; }
+        .library-mode-button.active { border-color:var(--primary-emerald); color:var(--primary-emerald); box-shadow:0 0 0 2px rgba(16,185,129,.18); }
+        .live-viewer-modes { display:none; position:sticky; top:0; z-index:20; gap:8px; justify-content:center; padding:8px 4px; background:#07100c; }
+        .live-viewer-modes button { flex:1; min-height:48px; max-width:240px; border:1px solid #236b50; border-radius:12px; background:#10241b; color:#fff; font-size:15px; font-weight:700; }
+        .live-viewer-modes button.active { background:#10b981; color:#00150e; }
+        .live-overlay.viewer-mode-image .live-top-bar,.live-overlay.viewer-mode-image .live-bottom-controls,.live-overlay.viewer-mode-image .current-title,.live-overlay.viewer-mode-image .current-badges,.live-overlay.viewer-mode-image #liveCurrentMeta,.live-overlay.viewer-mode-image #liveAudioPanel,.live-overlay.viewer-mode-image .live-playlist-sidebar,.live-overlay.viewer-mode-image .live-requests-panel { display:none !important; }
+        .live-overlay.viewer-mode-image .live-main-grid { display:block; }
+        .live-overlay.viewer-mode-image .live-chord-center-box { padding:8px; min-height:0; }
+        .live-overlay.viewer-mode-image .live-chord-img-container { height:calc(100dvh - 132px); min-height:0; }
+        .live-overlay.viewer-mode-playlist .live-top-bar,.live-overlay.viewer-mode-playlist .live-bottom-controls,.live-overlay.viewer-mode-playlist .live-chord-center-box,.live-overlay.viewer-mode-playlist .live-requests-panel { display:none !important; }
+        .live-overlay.viewer-mode-playlist .live-main-grid { display:block; }
+        .live-overlay.viewer-mode-playlist .live-playlist-sidebar { width:100%; max-height:calc(100dvh - 132px); overflow:auto; }
+        .live-overlay.viewer-mode-requests .live-top-bar,.live-overlay.viewer-mode-requests .live-bottom-controls,.live-overlay.viewer-mode-requests .live-main-grid { display:none !important; }
+        .live-overlay.viewer-mode-requests #viewerRequestPanel { display:block !important; }
+        @media (max-width:700px) { .nav-buttons { gap:6px; } .library-mode-buttons { justify-content:center; } }
 
         .live-chord-center-box {
             background: #0d1410; border: 2px solid var(--primary-emerald); border-radius: 16px; padding: 20px;
@@ -299,7 +314,7 @@
 <div class="container" id="mainContainerApp">
     <div class="header">
         <div class="app-brand">
-            <div class="app-logo-icon"><span>🎵</span></div>
+            <div class="app-logo-icon" aria-label="21K"><span>21<span style="color:#10b981">K</span></span></div>
             <div class="app-title-group">
                 <h1>21K <span>List</span></h1>
                 <div class="app-subtitle">Live Setlist & Chord Prompter Pro Hub (v4.3)</div>
@@ -337,6 +352,8 @@
                     <option value="Data">เฉพาะ [ Data ] แบ็คกิ้งแทร็ก</option>
                 </select>
                 <select id="filterGroove" class="filter-select" onchange="filterSongs()"><option value="">ทุก Groove</option></select>
+                <select id="filterSize" class="filter-select" onchange="filterSongs()"><option value="">ทุก Size</option><option>เล็กมาก</option><option>เล็ก</option><option>กลาง</option><option>ใหญ่</option><option>ใหญ่มาก</option></select>
+                <select id="filterTone" class="filter-select" onchange="filterSongs()"><option value="">ทุก Tone</option><option>มืดมาก</option><option>มืด</option><option>ปกติ</option><option>สว่าง</option><option>สว่างมาก</option></select>
                 <select id="filterKey" class="filter-select" onchange="filterSongs()">
                     <option value="">ทุก Key</option>
                     <option value="C">C</option><option value="C#">C#</option><option value="Db">Db</option><option value="D">D</option><option value="D#">D#</option><option value="Eb">Eb</option><option value="E">E</option><option value="F">F</option><option value="F#">F#</option><option value="Gb">Gb</option><option value="G">G</option><option value="G#">G#</option><option value="Ab">Ab</option><option value="A">A</option><option value="A#">A#</option><option value="Bb">Bb</option><option value="B">B</option><option value="Cm">Cm</option><option value="Dm">Dm</option><option value="Em">Em</option><option value="Fm">Fm</option><option value="F#m">F#m</option><option value="Gm">Gm</option><option value="Am">Am</option><option value="Bm">Bm</option>
@@ -360,11 +377,10 @@
                 <select id="filterHappy" class="filter-select" onchange="filterSongs()"><option value="">ทุก Happy</option><option value="น้อยมาก">น้อยมาก</option><option value="น้อย">น้อย</option><option value="พอใช้">พอใช้</option><option value="มาก">มาก</option><option value="มากที่สุด">มากที่สุด</option></select>
             </div>
         </div>
-        <div style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin:12px 0; color:var(--text-secondary); font-size:13px;">
-            <label for="libraryDisplayMode" style="margin:0;">รูปแบบคลังเพลง</label>
-            <select id="libraryDisplayMode" class="filter-select" onchange="setLibraryDisplayMode(this.value)" aria-label="เลือกรูปแบบการแสดงคลังเพลง">
-                <option value="normal">ปกติ</option><option value="medium">กลาง</option><option value="small">เล็ก</option><option value="titles">แสดงชื่อเพลงอย่างเดียว</option>
-            </select>
+        <div class="library-mode-buttons" role="group" aria-label="รูปแบบคลังเพลง">
+            <button class="library-mode-button" type="button" data-mode="normal" onclick="setLibraryDisplayMode('normal')" aria-label="ขนาดปกติ" title="ปกติ">▦</button>
+            <button class="library-mode-button" type="button" data-mode="medium" onclick="setLibraryDisplayMode('medium')" aria-label="ขนาดกลาง" title="กลาง">▤</button>
+            <button class="library-mode-button" type="button" data-mode="titles" onclick="setLibraryDisplayMode('titles')" aria-label="แสดงชื่อเพลงอย่างเดียว" title="ชื่อเพลงอย่างเดียว">☰</button>
         </div>
         <div class="video-grid" id="videoGrid"></div>
     </div>
@@ -412,6 +428,13 @@
 
                 <div class="builder-card">
                     <h4 style="margin-top:0; color:var(--primary-emerald);">📚 คลิกเลือกเพลงจากคลังเพิ่มเข้า Playlist</h4>
+                    <div class="filters-grid" style="margin-bottom:10px;">
+                        <select id="playlistFilterGroove" class="filter-select" onchange="renderPlaylistLibrary()"><option value="">ทุก Groove</option></select>
+                        <select id="playlistFilterSize" class="filter-select" onchange="renderPlaylistLibrary()"><option value="">ทุก Size</option><option>เล็กมาก</option><option>เล็ก</option><option>กลาง</option><option>ใหญ่</option><option>ใหญ่มาก</option></select>
+                        <select id="playlistFilterTone" class="filter-select" onchange="renderPlaylistLibrary()"><option value="">ทุก Tone</option><option>มืดมาก</option><option>มืด</option><option>ปกติ</option><option>สว่าง</option><option>สว่างมาก</option></select>
+                        <select id="playlistFilterSex" class="filter-select" onchange="renderPlaylistLibrary()"><option value="">ทุก Sex</option><option>ชาย</option><option>หญิง</option><option>ทั้งหมด</option></select>
+                        <select id="playlistFilterTaste" class="filter-select" onchange="renderPlaylistLibrary()"><option value="">ทุก Taste</option><option>อินเตอร์</option><option>ในเมือง</option><option>บ้าน</option><option>บ้านมาก</option><option>ทั้งหมด</option></select>
+                    </div>
                     <input type="text" id="playlistSearch" placeholder="ค้นหาเพลง..." oninput="renderPlaylistLibrary()" style="margin-bottom:12px;">
                     <div id="libraryPickerContainer"></div>
                 </div>
@@ -644,6 +667,12 @@
         <button class="close-live-btn" onclick="closeLivePropter()">✕ ปิดหน้าจอ Live</button>
     </div>
 
+    <nav class="live-viewer-modes" id="liveViewerModes" aria-label="เลือกมุมมอง Live">
+        <button type="button" data-view="image" onclick="setLiveViewerMode('image')">🖼️ รูปคอร์ด</button>
+        <button type="button" data-view="playlist" onclick="setLiveViewerMode('playlist')">📜 Setlist</button>
+        <button type="button" data-view="requests" onclick="setLiveViewerMode('requests')">🎤 ขอเพลง</button>
+    </nav>
+
     <div class="live-main-grid">
         <div class="live-chord-center-box">
             <div>
@@ -758,6 +787,7 @@
     let librarySyncBusy = false;
     let librarySyncTimer = null;
     let librarySyncDebounce = null;
+    let settingsSyncDebounce = null;
     let librarySyncInitPromise = null;
     let applyingCloudLibrary = false;
 
@@ -824,10 +854,31 @@
         if (status) { status.textContent = message; status.style.color = color; }
     }
 
+    async function apiErrorMessage(response, fallback) {
+        try {
+            const data = await response.clone().json();
+            if (data && data.error) return `${fallback}: ${data.error}`;
+        } catch (_) {}
+        return `${fallback} (HTTP ${response.status})`;
+    }
+
     function scheduleLibraryCloudSync() {
         clearTimeout(librarySyncDebounce);
         setLibrarySyncStatus('กำลังส่งข้อมูลเพลงขึ้นคลาวด์…', 'var(--accent-gold)');
         librarySyncDebounce = setTimeout(() => syncMusicLibraryWithCloud(), 800);
+    }
+
+    function localCustomSettings() {
+        return {
+            grooves: JSON.parse(localStorage.getItem('custom_grooves') || 'null') || getGrooves(),
+            crowdControls: JSON.parse(localStorage.getItem('custom_crowd_controls') || 'null') || getCrowdControls()
+        };
+    }
+
+    function scheduleSettingsCloudSync() {
+        clearTimeout(settingsSyncDebounce);
+        if (!librarySyncReady || isLiveViewer) return;
+        settingsSyncDebounce = setTimeout(() => syncMusicLibraryWithCloud(), 900);
     }
 
     async function syncMusicLibraryWithCloud() {
@@ -844,9 +895,22 @@
                 setLibrarySyncStatus('รหัสควบคุมไม่ถูกต้อง กดซิงก์เพื่อกรอกใหม่', '#f87171');
                 return;
             }
-            if (!remoteResponse.ok) throw new Error(`อ่านคลังส่วนกลางไม่ได้ (${remoteResponse.status})`);
+            if (!remoteResponse.ok) throw new Error(await apiErrorMessage(remoteResponse, 'อ่านคลังส่วนกลางไม่ได้'));
             const remote = await remoteResponse.json();
             const local = JSON.parse(localStorage.getItem('music_database') || '[]');
+            const remoteSettings = remote.settings || {};
+            const localSettings = localCustomSettings();
+            const mergeNamed = (a, b) => {
+                const map = new Map();
+                [...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])].forEach(item => {
+                    if (item && item.name) map.set(String(item.name).toLowerCase(), item);
+                });
+                return [...map.values()];
+            };
+            const mergedSettings = {
+                grooves: mergeNamed(remoteSettings.grooves, localSettings.grooves),
+                crowdControls: mergeNamed(remoteSettings.crowdControls, localSettings.crowdControls)
+            };
             const deletedIds = new Set([
                 ...(Array.isArray(remote.deletedIds) ? remote.deletedIds : []),
                 ...JSON.parse(localStorage.getItem('music_deleted_ids') || '[]')
@@ -861,11 +925,16 @@
             const changed = JSON.stringify(merged) !== JSON.stringify(remoteView.filter(song => !deletedIds.has(musicSongSyncId(song)))) || JSON.stringify(mergedDeletedIds) !== JSON.stringify(remoteDeletedIds);
             applyingCloudLibrary = true;
             saveMusicDatabase(merged, { fromCloud: true });
+            localStorage.setItem('custom_grooves', JSON.stringify(mergedSettings.grooves));
+            localStorage.setItem('custom_crowd_controls', JSON.stringify(mergedSettings.crowdControls));
             applyingCloudLibrary = false;
-            if (changed) {
+            const settingsChanged = JSON.stringify(mergedSettings) !== JSON.stringify({
+                grooves: remoteSettings.grooves || [], crowdControls: remoteSettings.crowdControls || []
+            });
+            if (changed || settingsChanged) {
                 const writeResponse = await fetch(`${SYNC_API}/library`, {
                     method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ songs: merged, deletedIds: mergedDeletedIds })
+                    body: JSON.stringify({ songs: merged, deletedIds: mergedDeletedIds, settings: mergedSettings })
                 });
                 if (writeResponse.status === 401) {
                     localStorage.removeItem('21k_owner_token');
@@ -873,9 +942,11 @@
                     setLibrarySyncStatus('รหัสควบคุมไม่ถูกต้อง กดซิงก์เพื่อกรอกใหม่', '#f87171');
                     return;
                 }
-                if (!writeResponse.ok) throw new Error(`บันทึกคลังส่วนกลางไม่ได้ (${writeResponse.status})`);
+                if (!writeResponse.ok) throw new Error(await apiErrorMessage(writeResponse, 'บันทึกคลังส่วนกลางไม่ได้'));
             }
             librarySyncReady = true;
+            populateDropdowns();
+            renderManagers();
             setLibrarySyncStatus(`☁️ ซิงก์แล้ว • ${merged.length} เพลง`, 'var(--primary-emerald)');
             renderSongs();
         } catch (error) {
@@ -948,7 +1019,7 @@
             localStorage.removeItem('21k_owner_token');
             throw new Error('รหัสควบคุมไม่ถูกต้อง กรุณากดสร้าง QR อีกครั้งแล้วกรอกรหัสใหม่');
         }
-        if (!response.ok) throw new Error(`ซิงก์ไม่สำเร็จ (${response.status})`);
+        if (!response.ok) throw new Error(await apiErrorMessage(response, 'ซิงก์ Live ไม่สำเร็จ'));
     }
 
     async function syncOwnerState() {
@@ -960,7 +1031,7 @@
     async function loadViewerState(showId) {
         if (!SYNC_API) throw new Error('หน้าเว็บยังไม่ได้ตั้งค่าเซิร์ฟเวอร์ซิงก์');
         const response = await fetch(`${SYNC_API}/show?id=${encodeURIComponent(showId)}`, { cache:'no-store' });
-        if (!response.ok) throw new Error(response.status === 404 ? 'ไม่พบข้อมูลโชว์ หรือ QR หมดอายุแล้ว' : 'เชื่อมต่อข้อมูลโชว์ไม่ได้');
+        if (!response.ok) throw new Error(response.status === 404 ? 'ไม่พบข้อมูลโชว์ หรือ QR หมดอายุแล้ว' : await apiErrorMessage(response, 'เชื่อมต่อข้อมูลโชว์ไม่ได้'));
         const state = await response.json();
         if (state.showId !== showId || !Array.isArray(state.playlist) || !state.playlist.length) throw new Error('ข้อมูลโชว์ไม่ถูกต้อง');
         activePlaylistCache = state.playlist;
@@ -998,6 +1069,17 @@
         });
     }
 
+    function setLiveViewerMode(mode) {
+        const allowed = ['image', 'playlist', 'requests'];
+        if (!allowed.includes(mode)) mode = 'image';
+        const overlay = document.getElementById('liveOverlay');
+        overlay.classList.remove('viewer-mode-image', 'viewer-mode-playlist', 'viewer-mode-requests');
+        overlay.classList.add(`viewer-mode-${mode}`);
+        document.querySelectorAll('#liveViewerModes button').forEach(button => {
+            button.classList.toggle('active', button.dataset.view === mode);
+        });
+    }
+
     async function submitLiveSongRequest(event) {
         event.preventDefault();
         const message = document.getElementById('requestSubmitMessage');
@@ -1014,7 +1096,7 @@
             const response = await fetch(`${SYNC_API}/requests?id=${encodeURIComponent(showId)}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request)
             });
-            if (!response.ok) throw new Error('ระบบรับคำขอยังไม่ได้ตั้งค่า หรือเชื่อมต่อไม่สำเร็จ');
+            if (!response.ok) throw new Error(await apiErrorMessage(response, 'ส่งคำขอไม่สำเร็จ'));
             document.getElementById('requestSongTitle').value = '';
             document.getElementById('requestFriendName').value = '';
             document.getElementById('requestSongNote').value = '';
@@ -1046,7 +1128,7 @@
         let stored = localStorage.getItem('custom_grooves');
         return stored ? JSON.parse(stored) : defaultGrooves;
     }
-    function saveGrooves(grooves) { localStorage.setItem('custom_grooves', JSON.stringify(grooves)); }
+    function saveGrooves(grooves) { localStorage.setItem('custom_grooves', JSON.stringify(grooves)); scheduleSettingsCloudSync(); }
 
     function getCrowdControls() {
         let defaultCrowd = [
@@ -1060,7 +1142,7 @@
         let stored = localStorage.getItem('custom_crowd_controls');
         return stored ? JSON.parse(stored) : defaultCrowd;
     }
-    function saveCrowdControls(crowd) { localStorage.setItem('custom_crowd_controls', JSON.stringify(crowd)); }
+    function saveCrowdControls(crowd) { localStorage.setItem('custom_crowd_controls', JSON.stringify(crowd)); scheduleSettingsCloudSync(); }
 
     function switchTab(tab) {
         document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
@@ -1102,12 +1184,19 @@
     function populateDropdowns() {
         let grooves = getGrooves();
         let songGrooveSel = document.getElementById('songGroove');
-        songGrooveSel.innerHTML = '<option value="">-- เลือก Groove --</option>';
-        grooves.forEach(g => { songGrooveSel.innerHTML += `<option value="${g.name}">${g.name}</option>`; });
+        const selectedGroove = songGrooveSel.value;
+        songGrooveSel.replaceChildren(new Option('-- เลือก Groove --', ''));
+        grooves.forEach(g => songGrooveSel.add(new Option(g.name, g.name)));
+        if (grooves.some(g => g.name === selectedGroove)) songGrooveSel.value = selectedGroove;
 
         let filterGrooveSel = document.getElementById('filterGroove');
         filterGrooveSel.innerHTML = '<option value="">ทุก Groove</option>';
         grooves.forEach(g => { filterGrooveSel.innerHTML += `<option value="${g.name}">${g.name}</option>`; });
+        const playlistGroove = document.getElementById('playlistFilterGroove');
+        const selectedPlaylistGroove = playlistGroove.value;
+        playlistGroove.replaceChildren(new Option('ทุก Groove', ''));
+        grooves.forEach(g => playlistGroove.add(new Option(g.name, g.name)));
+        if (grooves.some(g => g.name === selectedPlaylistGroove)) playlistGroove.value = selectedPlaylistGroove;
 
         let crowdList = getCrowdControls();
         let crowdGroup = document.getElementById('crowdCheckboxGroup');
@@ -1246,6 +1335,12 @@
         const tasteChecked = document.querySelector('input[name="taste"]:checked');
         const newsChecked = document.querySelector('input[name="news"]:checked');
         const happyChecked = document.querySelector('input[name="happy"]:checked');
+        const selectedGroove = document.getElementById('songGroove').value;
+        if (!selectedGroove) {
+            alert('กรุณาเลือก Groove ก่อนบันทึกเพลง');
+            document.getElementById('songGroove').focus();
+            return;
+        }
 
         const data = {
             timestamp: timestamp,
@@ -1253,7 +1348,7 @@
             liveMode: liveModeChecked ? liveModeChecked.value : 'Live',
             songKey: document.getElementById('songKey').value || '-',
             firstChord: document.getElementById('songFirstChord').value || '-',
-            groove: document.getElementById('songGroove').value || 'ทั่วไป',
+            groove: selectedGroove,
             speed: speedChecked ? speedChecked.value : 'กลาง',
             crowdControl: selectedCrowds.length > 0 ? selectedCrowds.join(', ') : '-',
             emotion: document.getElementById('songEmotion').value || '-',
@@ -1382,6 +1477,8 @@
         let fStar = document.getElementById('filterStar').value;
         let fLiveMode = document.getElementById('filterLiveMode').value;
         let fGroove = document.getElementById('filterGroove').value;
+        let fSize = document.getElementById('filterSize').value;
+        let fTone = document.getElementById('filterTone').value;
         let fKey = document.getElementById('filterKey').value;
         let fSpeed = document.getElementById('filterSpeed').value;
         let fCrowd = document.getElementById('filterCrowd').value;
@@ -1400,6 +1497,8 @@
             let matchStar = !fStar || (fStar === 'starred' && song.isStarred);
             let matchLiveMode = !fLiveMode || song.liveMode === fLiveMode;
             let matchGroove = !fGroove || song.groove === fGroove;
+            let matchSize = !fSize || song.size === fSize;
+            let matchTone = !fTone || song.tone === fTone;
             let matchKey = !fKey || song.songKey === fKey;
             let matchSpeed = !fSpeed || song.speed === fSpeed;
             let matchCrowd = !fCrowd || (song.crowdControl && song.crowdControl.includes(fCrowd));
@@ -1410,7 +1509,7 @@
             let matchNews = !fNews || song.news === fNews;
             let matchHappy = !fHappy || song.happy === fHappy;
 
-            return matchKeyword && matchStar && matchLiveMode && matchGroove && matchKey && matchSpeed && matchCrowd && matchEmotion && matchSex && matchGen && matchTaste && matchNews && matchHappy;
+            return matchKeyword && matchStar && matchLiveMode && matchGroove && matchSize && matchTone && matchKey && matchSpeed && matchCrowd && matchEmotion && matchSex && matchGen && matchTaste && matchNews && matchHappy;
         });
         displayFilteredSongs(filtered);
     }
@@ -1418,12 +1517,15 @@
     function displayFilteredSongs(songs) {
         const grid = document.getElementById('videoGrid');
         const displayMode = localStorage.getItem('library_display_mode') || 'normal';
-        const allowedDisplayModes = ['normal', 'medium', 'small', 'titles'];
+        const allowedDisplayModes = ['normal', 'medium', 'titles'];
         const safeDisplayMode = allowedDisplayModes.includes(displayMode) ? displayMode : 'normal';
         grid.classList.remove('library-view-normal', 'library-view-medium', 'library-view-small', 'library-view-titles');
         grid.classList.add(`library-view-${safeDisplayMode}`);
-        const displayPicker = document.getElementById('libraryDisplayMode');
-        if (displayPicker) displayPicker.value = safeDisplayMode;
+        document.querySelectorAll('.library-mode-button').forEach(button => {
+            const active = button.dataset.mode === safeDisplayMode;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-pressed', String(active));
+        });
         grid.innerHTML = '';
         let grooves = getGrooves();
         let allSongs = JSON.parse(localStorage.getItem('music_database') || '[]');
@@ -1461,6 +1563,8 @@
                         ${song.crowdControl && song.crowdControl !== '-' ? `<span class="badge-groove" style="background: #fbbf24; color:#000; margin-left:4px;">🎯 ${song.crowdControl}</span>` : ''}
                         <div class="tags-row">
                             <span class="tag">🔑 ${song.songKey || '-'}</span>
+                            <span class="tag">Size: ${song.size || '-'}</span>
+                            <span class="tag">Tone: ${song.tone || '-'}</span>
                             <span class="tag">Sex: ${song.sex || '-'}</span>
                             <span class="tag">Gen: ${song.gen || '-'}</span>
                             <span class="tag">Taste: ${song.taste || '-'}</span>
@@ -1474,7 +1578,7 @@
                     </div>
                 </div>
                 <div class="card-footer">
-                    <button class="btn-card-action btn-broadcast" onclick="openLivePropterSingle(${realIndex})">📺 เล่นเดี่ยว</button>
+                    <button type="button" class="btn-card-action" style="background:var(--primary-emerald);color:#00150e;min-width:44px;font-size:22px;" onclick="addToPlaylist(${realIndex});switchTab('playlist')" aria-label="เพิ่มเพลงเข้า Playlist" title="เพิ่มเข้า Playlist">+</button>
                     <div>
                         <button class="btn-card-action btn-edit" onclick="editSong(${realIndex})">✏️ แก้ไข</button>
                         <button class="btn-card-action btn-delete" onclick="deleteSong(${realIndex})">ลบ</button>
@@ -1486,7 +1590,7 @@
     }
 
     function setLibraryDisplayMode(mode) {
-        const allowedModes = ['normal', 'medium', 'small', 'titles'];
+        const allowedModes = ['normal', 'medium', 'titles'];
         if (!allowedModes.includes(mode)) mode = 'normal';
         localStorage.setItem('library_display_mode', mode);
         filterSongs();
@@ -1536,10 +1640,16 @@
     function renderPlaylistLibrary() {
         let songs = JSON.parse(localStorage.getItem('music_database') || '[]');
         let keyword = document.getElementById('playlistSearch').value.toLowerCase();
+        let fGroove = document.getElementById('playlistFilterGroove').value;
+        let fSize = document.getElementById('playlistFilterSize').value;
+        let fTone = document.getElementById('playlistFilterTone').value;
+        let fSex = document.getElementById('playlistFilterSex').value;
+        let fTaste = document.getElementById('playlistFilterTaste').value;
         let container = document.getElementById('libraryPickerContainer');
         container.innerHTML = '';
         let filtered = songs.map((song, origIndex) => ({ song, origIndex })).filter(item => 
-            item.song.title.toLowerCase().includes(keyword) || item.song.groove.toLowerCase().includes(keyword)
+            ((item.song.title || '').toLowerCase().includes(keyword) || (item.song.groove || '').toLowerCase().includes(keyword)) &&
+            (!fGroove || item.song.groove === fGroove) && (!fSize || item.song.size === fSize) && (!fTone || item.song.tone === fTone) && (!fSex || item.song.sex === fSex) && (!fTaste || item.song.taste === fTaste)
         );
 
         if (filtered.length === 0) {
@@ -1773,6 +1883,7 @@
 
     function renderShowFlow() {
         let songs = getCurrentPlaylist();
+        const grooves = getGrooves();
         const tbody = document.getElementById('scriptTableBody');
         tbody.innerHTML = '';
         if (songs.length === 0) {
@@ -1783,13 +1894,14 @@
         let labels = [], dataPower = [], pointColors = [];
         songs.forEach((song, index) => {
             let toneCol = getToneColor(song.tone);
+            const grooveColor = (grooves.find(g => g.name === song.groove) || {}).color || '#10b981';
             labels.push(`${index + 1}. ${song.title}`);
             dataPower.push(song.power || 50);
             pointColors.push(toneCol);
             let mBadge = song.liveMode === 'Data' ? '<span class="mode-badge-data">[Data]</span>' : '<span class="mode-badge-live">[Live]</span>';
             tbody.innerHTML += `
                 <tr>
-                    <td><b>#${index + 1}</b></td><td><b>${song.title}</b></td><td>${mBadge}</td>
+                    <td><b>#${index + 1}</b></td><td><b style="color:${grooveColor};">${song.title}</b></td><td>${mBadge}</td>
                     <td><b style="color:var(--primary-emerald);">${song.songKey || '-'}</b></td>
                     <td><b style="color:var(--accent-gold);">${song.firstChord || '-'}</b></td>
                     <td>${song.groove}</td><td>${song.speed || 'กลาง'}</td><td>🎯 ${song.crowdControl || '-'}</td>
@@ -2143,6 +2255,9 @@
             document.getElementById('addSongLiveBtn').style.display = 'none';
             document.getElementById('viewerRequestPanel').style.display = 'block';
             document.getElementById('liveRequestsPanel').style.display = 'none';
+            document.getElementById('liveViewerModes').style.display = 'flex';
+            document.body.classList.add('live-viewer');
+            setLiveViewerMode('image');
             document.querySelector('.close-live-btn').style.display = 'none';
             document.querySelector('.live-bottom-controls').style.display = 'none';
             document.getElementById('liveQueueIndicator').innerText = 'กำลังเชื่อมต่อข้อมูลโชว์…';
@@ -2152,6 +2267,7 @@
             });
             viewerPollTimer = setInterval(() => loadViewerState(showId).catch(error => console.warn(error)), 4000);
         } else {
+            populateDropdowns();
             if (!localStorage.getItem('music_database')) {
                 saveMusicDatabase([]);
             }

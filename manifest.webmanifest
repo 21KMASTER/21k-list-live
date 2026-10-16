@@ -1,0 +1,11 @@
+{
+  "name": "21K List Live",
+  "short_name": "21K List",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#060907",
+  "theme_color": "#07100c",
+  "icons": [
+    { "src": "./icon-21k.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

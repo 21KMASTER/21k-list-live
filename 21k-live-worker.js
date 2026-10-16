@@ -22,7 +22,12 @@ async function readRecord(env) {
   const response = await fetch(`${JSONBIN}/${env.JSONBIN_BIN_ID}/latest`, {
     headers: { 'X-Master-Key': env.JSONBIN_MASTER_KEY }
   });
-  if (!response.ok) throw new Error(`JSONBin read failed (${response.status})`);
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 300);
+    const error = new Error(`JSONBin อ่านข้อมูลไม่สำเร็จ (HTTP ${response.status})${detail ? `: ${detail}` : ''}`);
+    error.upstreamStatus = response.status;
+    throw error;
+  }
   const result = await response.json();
   return result.record && typeof result.record === 'object' ? result.record : {};
 }
@@ -33,7 +38,21 @@ async function writeRecord(env, record) {
     headers: { 'Content-Type': 'application/json', 'X-Master-Key': env.JSONBIN_MASTER_KEY },
     body: JSON.stringify(record)
   });
-  if (!response.ok) throw new Error(`JSONBin update failed (${response.status})`);
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 300);
+    const error = new Error(`JSONBin บันทึกข้อมูลไม่สำเร็จ (HTTP ${response.status})${detail ? `: ${detail}` : ''}`);
+    error.upstreamStatus = response.status;
+    throw error;
+  }
+}
+
+function mergeNamedSettings(existing, incoming) {
+  const result = new Map();
+  for (const item of [...(Array.isArray(existing) ? existing : []), ...(Array.isArray(incoming) ? incoming : [])]) {
+    if (!item || typeof item.name !== 'string' || !item.name.trim()) continue;
+    result.set(item.name.trim().toLowerCase(), { name: item.name.trim(), color: /^#[0-9a-f]{6}$/i.test(item.color || '') ? item.color : '#10b981' });
+  }
+  return [...result.values()];
 }
 
 function validShowId(value) { return typeof value === 'string' && /^SHOW_[A-Z0-9]{4,16}$/.test(value); }
@@ -72,24 +91,29 @@ export default {
       const showId = url.searchParams.get('id');
       if (!url.pathname.endsWith('/library') && !validShowId(showId)) return json({ error: 'Invalid show id' }, 400, headers);
       const owner = request.headers.get('Authorization') === `Bearer ${env.OWNER_TOKEN}`;
+      if (url.pathname.endsWith('/library') && !owner) return json({ error: 'Unauthorized' }, 401, headers);
       const record = await readRecord(env);
       record.shows = record.shows && typeof record.shows === 'object' ? record.shows : {};
       const show = record.shows[showId];
 
       if (url.pathname.endsWith('/library') && request.method === 'GET') {
-        if (!owner) return json({ error: 'Unauthorized' }, 401, headers);
         const library = record.library && typeof record.library === 'object' ? record.library : {};
-        return json({ songs: Array.isArray(library.songs) ? library.songs : [], deletedIds: Array.isArray(library.deletedIds) ? library.deletedIds : [], updatedAt: library.updatedAt || 0 }, 200, headers);
+        return json({ songs: Array.isArray(library.songs) ? library.songs : [], deletedIds: Array.isArray(library.deletedIds) ? library.deletedIds : [], settings: library.settings || {}, updatedAt: library.updatedAt || 0 }, 200, headers);
       }
       if (url.pathname.endsWith('/library') && request.method === 'PUT') {
-        if (!owner) return json({ error: 'Unauthorized' }, 401, headers);
         const body = await request.json();
         if (!Array.isArray(body.songs) || body.songs.length > 3000) return json({ error: 'Invalid library data' }, 400, headers);
         const library = record.library && typeof record.library === 'object' ? record.library : {};
         const deletedIds = [...new Set([...(Array.isArray(library.deletedIds) ? library.deletedIds : []), ...(Array.isArray(body.deletedIds) ? body.deletedIds : [])].map(String))];
         const deleted = new Set(deletedIds);
         const songs = mergeSongLists(library.songs, body.songs).filter(song => !deleted.has(songIdentity(song)));
-        record.library = { songs, deletedIds, updatedAt: Date.now() };
+        const oldSettings = library.settings && typeof library.settings === 'object' ? library.settings : {};
+        const incomingSettings = body.settings && typeof body.settings === 'object' ? body.settings : {};
+        const settings = {
+          grooves: mergeNamedSettings(oldSettings.grooves, incomingSettings.grooves),
+          crowdControls: mergeNamedSettings(oldSettings.crowdControls, incomingSettings.crowdControls)
+        };
+        record.library = { songs, deletedIds, settings, updatedAt: Date.now() };
         await writeRecord(env, record);
         return json({ ok: true, songs, deletedIds, updatedAt: record.library.updatedAt }, 200, headers);
       }
@@ -129,7 +153,9 @@ export default {
       }
       return json({ error: 'Not found' }, 404, headers);
     } catch (error) {
-      return json({ error: error.message || 'Request failed' }, 500, headers);
+      const upstreamStatus = Number(error.upstreamStatus || 0);
+      const status = upstreamStatus === 429 ? 503 : (upstreamStatus ? 502 : 500);
+      return json({ error: error.message || 'Request failed', source: upstreamStatus ? 'JSONBin' : 'Worker' }, status, headers);
     }
   }
 };
