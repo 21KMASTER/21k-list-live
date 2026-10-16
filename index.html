@@ -278,12 +278,10 @@
         .live-overlay.viewer-mode-playlist .live-playlist-sidebar { width:100%; max-height:calc(100dvh - 132px); overflow:auto; }
         .live-overlay.viewer-mode-requests .live-main-grid { display:none !important; }
         .live-overlay.viewer-mode-requests #viewerBirthdayPanel,.live-overlay.viewer-mode-requests #liveBirthdayPanel { display:none !important; }
-        .live-overlay.viewer-mode-birthdays .live-main-grid,.live-overlay.viewer-mode-birthdays #viewerRequestPanel { display:none !important; }
-        .live-overlay.viewer-mode-birthdays #liveRequestsPanel { display:none !important; }
+        .live-overlay.viewer-mode-birthdays .live-main-grid,.live-overlay.viewer-mode-birthdays #viewerRequestPanel,.live-overlay.viewer-mode-birthdays #liveRequestsPanel { display:none !important; }
         .live-overlay.is-viewer.viewer-mode-requests #viewerRequestPanel,.live-overlay.is-viewer.viewer-mode-birthdays #viewerBirthdayPanel { display:block !important; }
-        .live-overlay:not(.is-viewer).viewer-mode-requests #liveRequestsPanel { display:block !important; }
-        .live-overlay:not(.is-viewer).viewer-mode-birthdays #liveBirthdayPanel { display:block !important; }
-        .live-overlay.is-viewer.viewer-mode-requests #liveRequestsPanel,.live-overlay.is-viewer.viewer-mode-birthdays #liveBirthdayPanel { display:none !important; }
+        .live-overlay.viewer-mode-requests #liveRequestsPanel { display:block !important; }
+        .live-overlay.viewer-mode-birthdays #liveBirthdayPanel { display:block !important; }
         .live-overlay.is-viewer.viewer-mode-image .live-top-bar,.live-overlay.is-viewer.viewer-mode-image .live-bottom-controls,
         .live-overlay.is-viewer.viewer-mode-playlist .live-top-bar,.live-overlay.is-viewer.viewer-mode-playlist .live-bottom-controls,
         .live-overlay.is-viewer.viewer-mode-requests .live-top-bar,.live-overlay.is-viewer.viewer-mode-requests .live-bottom-controls,
@@ -730,13 +728,13 @@
     </div>
     <section class="live-requests-panel" id="liveRequestsPanel" style="display:none;">
         <h3 style="margin:0; color:var(--accent-gold);">🎤 เพลงที่เพื่อน ๆ ขอ (ไอเดียไว้แกะซ้อม)</h3>
-        <div style="color:var(--text-secondary); font-size:12px; margin-top:4px;">รายการนี้บันทึกกับโชว์ และจะแสดงให้ทีมเห็น</div>
+        <div style="color:var(--text-secondary); font-size:12px; margin-top:4px;">รายการที่เพื่อนส่งเข้ามา • ผู้ชมและทีมงานเห็นรายการเดียวกัน</div>
         <div id="liveRequestsList" class="live-requests-list"></div>
         <div id="liveRequestsEmpty" style="color:var(--text-secondary); font-size:13px; margin-top:10px;">ยังไม่มีคำขอเพลง</div>
     </section>
     <section class="live-requests-panel" id="liveBirthdayPanel" style="display:none;">
         <h3 style="margin:0; color:var(--accent-gold);">🎂 รายชื่อวันเกิดที่เพื่อนฝาก</h3>
-        <div style="color:var(--text-secondary); font-size:12px; margin-top:4px;">รายการนี้บันทึกกับโชว์ และทีมงานเปิดดูได้</div>
+        <div style="color:var(--text-secondary); font-size:12px; margin-top:4px;">รายการที่เพื่อนฝากไว้ • ผู้ชมและทีมงานเห็นรายการเดียวกัน</div>
         <div id="liveBirthdaysList" class="live-requests-list"></div>
         <div id="liveBirthdaysEmpty" style="color:var(--text-secondary); font-size:13px; margin-top:10px;">ยังไม่มีรายชื่อวันเกิด</div>
     </section>
@@ -1071,6 +1069,7 @@
         if (!response.ok) throw new Error(response.status === 404 ? 'ไม่พบข้อมูลโชว์ หรือ QR หมดอายุแล้ว' : await apiErrorMessage(response, 'เชื่อมต่อข้อมูลโชว์ไม่ได้'));
         const state = await response.json();
         if (state.showId !== showId || !Array.isArray(state.playlist) || !state.playlist.length) throw new Error('ข้อมูลโชว์ไม่ถูกต้อง');
+        activeShowId = showId;
         activePlaylistCache = state.playlist;
         liveRequestsCache = Array.isArray(state.requests) ? state.requests : liveRequestsCache;
         liveBirthdayCache = Array.isArray(state.birthdays) ? state.birthdays : liveBirthdayCache;
@@ -1085,8 +1084,7 @@
         const list = document.getElementById('liveRequestsList');
         const empty = document.getElementById('liveRequestsEmpty');
         if (!panel || !list || !empty) return;
-        const isViewerPage = new URLSearchParams(window.location.search).has('show');
-        panel.style.display = !isViewerPage && activeShowId ? 'block' : 'none';
+        panel.style.display = activeShowId ? 'block' : 'none';
         list.innerHTML = '';
         empty.style.display = liveRequestsCache.length ? 'none' : 'block';
         liveRequestsCache.slice().reverse().forEach(request => {
@@ -1113,8 +1111,7 @@
         const list = document.getElementById('liveBirthdaysList');
         const empty = document.getElementById('liveBirthdaysEmpty');
         if (!panel || !list || !empty) return;
-        const isViewerPage = new URLSearchParams(window.location.search).has('show');
-        panel.style.display = !isViewerPage && activeShowId ? 'block' : 'none';
+        panel.style.display = activeShowId ? 'block' : 'none';
         list.innerHTML = '';
         empty.style.display = liveBirthdayCache.length ? 'none' : 'block';
         liveBirthdayCache.slice().reverse().forEach(entry => {
@@ -1168,6 +1165,7 @@
             document.getElementById('birthdaySenderName').value = '';
             document.getElementById('birthdayMessage').value = '';
             message.textContent = 'ส่งชื่อวันเกิดแล้ว ขอบคุณค่ะ!';
+            await refreshLiveBirthdays(showId);
         } catch (error) { message.textContent = error.message; }
     }
 
