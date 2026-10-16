@@ -126,7 +126,11 @@ export default {
         if (!owner) return json({ error: 'Unauthorized' }, 401, headers);
         const body = await request.json();
         if (body.showId !== showId || !Array.isArray(body.playlist) || !body.playlist.length) return json({ error: 'Invalid show data' }, 400, headers);
-        record.shows[showId] = { ...body, requests: show && Array.isArray(show.requests) ? show.requests : [] };
+        record.shows[showId] = {
+          ...body,
+          requests: show && Array.isArray(show.requests) ? show.requests : [],
+          birthdays: show && Array.isArray(show.birthdays) ? show.birthdays : []
+        };
         await writeRecord(env, record);
         return json({ ok: true }, 200, headers);
       }
@@ -148,6 +152,27 @@ export default {
           date: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })
         });
         record.shows[showId] = { ...show, requests };
+        await writeRecord(env, record);
+        return json({ ok: true }, 201, headers);
+      }
+      if (url.pathname.endsWith('/birthdays') && request.method === 'GET') {
+        if (!show) return json({ birthdays: [] }, 200, headers);
+        return json({ birthdays: Array.isArray(show.birthdays) ? show.birthdays : [] }, 200, headers);
+      }
+      if (url.pathname.endsWith('/birthdays') && request.method === 'POST') {
+        if (!show) return json({ error: 'Show not found' }, 404, headers);
+        const body = await request.json();
+        const person = String(body.person || '').trim().slice(0, 80);
+        if (!person) return json({ error: 'Birthday name is required' }, 400, headers);
+        const birthdays = Array.isArray(show.birthdays) ? show.birthdays : [];
+        if (birthdays.length >= 200) return json({ error: 'Birthday list is full' }, 429, headers);
+        birthdays.push({
+          id: crypto.randomUUID(), person,
+          name: String(body.name || '').trim().slice(0, 60),
+          message: String(body.message || '').trim().slice(0, 200),
+          date: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })
+        });
+        record.shows[showId] = { ...show, birthdays };
         await writeRecord(env, record);
         return json({ ok: true }, 201, headers);
       }

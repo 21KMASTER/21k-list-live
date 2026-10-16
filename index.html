@@ -266,17 +266,36 @@
         .library-mode-button { min-width:48px; min-height:44px; border:1px solid var(--border-color); background:var(--surface-color); color:var(--text-primary); border-radius:10px; font-size:20px; cursor:pointer; }
         .library-mode-button.active { border-color:var(--primary-emerald); color:var(--primary-emerald); box-shadow:0 0 0 2px rgba(16,185,129,.18); }
         .live-viewer-modes { display:none; position:sticky; top:0; z-index:20; gap:8px; justify-content:center; padding:8px 4px; background:#07100c; }
-        .live-viewer-modes button { flex:1; min-height:48px; max-width:240px; border:1px solid #236b50; border-radius:12px; background:#10241b; color:#fff; font-size:15px; font-weight:700; }
+        .live-viewer-modes button { flex:1; min-height:48px; min-width:0; max-width:240px; border:1px solid #236b50; border-radius:12px; background:#10241b; color:#fff; font-size:15px; font-weight:700; }
         .live-viewer-modes button.active { background:#10b981; color:#00150e; }
-        .live-overlay.viewer-mode-image .live-top-bar,.live-overlay.viewer-mode-image .live-bottom-controls,.live-overlay.viewer-mode-image .current-title,.live-overlay.viewer-mode-image .current-badges,.live-overlay.viewer-mode-image #liveCurrentMeta,.live-overlay.viewer-mode-image #liveAudioPanel,.live-overlay.viewer-mode-image .live-playlist-sidebar,.live-overlay.viewer-mode-image .live-requests-panel { display:none !important; }
+        .live-overlay.viewer-mode-image .current-title,.live-overlay.viewer-mode-image .current-badges,.live-overlay.viewer-mode-image #liveCurrentMeta,.live-overlay.viewer-mode-image #liveAudioPanel,.live-overlay.viewer-mode-image .live-playlist-sidebar,.live-overlay.viewer-mode-image .live-requests-panel { display:none !important; }
         .live-overlay.viewer-mode-image .live-main-grid { display:block; }
-        .live-overlay.viewer-mode-image .live-chord-center-box { padding:8px; min-height:0; }
-        .live-overlay.viewer-mode-image .live-chord-img-container { height:calc(100dvh - 132px); min-height:0; }
-        .live-overlay.viewer-mode-playlist .live-top-bar,.live-overlay.viewer-mode-playlist .live-bottom-controls,.live-overlay.viewer-mode-playlist .live-chord-center-box,.live-overlay.viewer-mode-playlist .live-requests-panel { display:none !important; }
+        .live-overlay.viewer-mode-image .live-chord-center-box { padding:0; min-height:0; border:0; border-radius:0; box-shadow:none; background:transparent; }
+        .live-overlay.viewer-mode-image .live-chord-img-container { height:calc(100dvh - 210px); max-height:none; min-height:0; border:0; border-radius:0; margin:0; background:transparent; }
+        .live-overlay.viewer-mode-image .live-chord-img-container img { width:100%; height:100%; max-width:100%; max-height:100%; object-fit:contain; }
+        .live-overlay.viewer-mode-playlist .live-chord-center-box,.live-overlay.viewer-mode-playlist .live-requests-panel { display:none !important; }
         .live-overlay.viewer-mode-playlist .live-main-grid { display:block; }
         .live-overlay.viewer-mode-playlist .live-playlist-sidebar { width:100%; max-height:calc(100dvh - 132px); overflow:auto; }
-        .live-overlay.viewer-mode-requests .live-top-bar,.live-overlay.viewer-mode-requests .live-bottom-controls,.live-overlay.viewer-mode-requests .live-main-grid { display:none !important; }
-        .live-overlay.viewer-mode-requests #viewerRequestPanel { display:block !important; }
+        .live-overlay.viewer-mode-requests .live-main-grid { display:none !important; }
+        .live-overlay.viewer-mode-requests #viewerBirthdayPanel,.live-overlay.viewer-mode-requests #liveBirthdayPanel { display:none !important; }
+        .live-overlay.viewer-mode-birthdays .live-main-grid,.live-overlay.viewer-mode-birthdays #viewerRequestPanel { display:none !important; }
+        .live-overlay.viewer-mode-birthdays #liveRequestsPanel { display:none !important; }
+        .live-overlay.is-viewer.viewer-mode-requests #viewerRequestPanel,.live-overlay.is-viewer.viewer-mode-birthdays #viewerBirthdayPanel { display:block !important; }
+        .live-overlay:not(.is-viewer).viewer-mode-requests #liveRequestsPanel { display:block !important; }
+        .live-overlay:not(.is-viewer).viewer-mode-birthdays #liveBirthdayPanel { display:block !important; }
+        .live-overlay.is-viewer.viewer-mode-requests #liveRequestsPanel,.live-overlay.is-viewer.viewer-mode-birthdays #liveBirthdayPanel { display:none !important; }
+        .live-overlay.is-viewer.viewer-mode-image .live-top-bar,.live-overlay.is-viewer.viewer-mode-image .live-bottom-controls,
+        .live-overlay.is-viewer.viewer-mode-playlist .live-top-bar,.live-overlay.is-viewer.viewer-mode-playlist .live-bottom-controls,
+        .live-overlay.is-viewer.viewer-mode-requests .live-top-bar,.live-overlay.is-viewer.viewer-mode-requests .live-bottom-controls,
+        .live-overlay.is-viewer.viewer-mode-birthdays .live-top-bar,.live-overlay.is-viewer.viewer-mode-birthdays .live-bottom-controls { display:none !important; }
+        .live-overlay.is-viewer.viewer-mode-image .live-chord-img-container { height:calc(100dvh - 110px); }
+        .live-overlay.is-viewer.viewer-mode-playlist .live-playlist-sidebar { max-height:calc(100dvh - 110px); }
+        .live-pl-song-row { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:5px 12px; width:100%; }
+        .live-pl-song-title { color:#fff; font-weight:700; }
+        .live-pl-song-meta { display:flex; flex-wrap:wrap; gap:6px; color:var(--accent-gold); font-weight:700; font-size:12px; }
+        .live-display-panel { display:none; }
+        @media (max-width:900px) { .live-top-bar { flex-wrap:wrap; gap:8px; } }
+        @media (max-width:520px) { .live-viewer-modes { gap:4px; } .live-viewer-modes button { padding:4px 2px; font-size:12px; } .live-requests-panel { margin:8px 0; padding:12px; } }
         @media (max-width:700px) { .nav-buttons { gap:6px; } .library-mode-buttons { justify-content:center; } }
 
         .live-chord-center-box {
@@ -671,6 +690,7 @@
         <button type="button" data-view="image" onclick="setLiveViewerMode('image')">🖼️ รูปคอร์ด</button>
         <button type="button" data-view="playlist" onclick="setLiveViewerMode('playlist')">📜 Setlist</button>
         <button type="button" data-view="requests" onclick="setLiveViewerMode('requests')">🎤 ขอเพลง</button>
+        <button type="button" data-view="birthdays" onclick="setLiveViewerMode('birthdays')">🎂 วันเกิด</button>
     </nav>
 
     <div class="live-main-grid">
@@ -714,6 +734,12 @@
         <div id="liveRequestsList" class="live-requests-list"></div>
         <div id="liveRequestsEmpty" style="color:var(--text-secondary); font-size:13px; margin-top:10px;">ยังไม่มีคำขอเพลง</div>
     </section>
+    <section class="live-requests-panel" id="liveBirthdayPanel" style="display:none;">
+        <h3 style="margin:0; color:var(--accent-gold);">🎂 รายชื่อวันเกิดที่เพื่อนฝาก</h3>
+        <div style="color:var(--text-secondary); font-size:12px; margin-top:4px;">รายการนี้บันทึกกับโชว์ และทีมงานเปิดดูได้</div>
+        <div id="liveBirthdaysList" class="live-requests-list"></div>
+        <div id="liveBirthdaysEmpty" style="color:var(--text-secondary); font-size:13px; margin-top:10px;">ยังไม่มีรายชื่อวันเกิด</div>
+    </section>
     <section class="live-requests-panel" id="viewerRequestPanel" style="display:none;">
         <h3 style="margin:0 0 10px; color:var(--primary-emerald);">🎵 ฝากเพลงที่อยากฟัง</h3>
         <form onsubmit="submitLiveSongRequest(event)" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px;">
@@ -723,6 +749,16 @@
             <button type="submit" class="btn" style="background:var(--primary-emerald); color:#00150e; font-weight:bold;">ส่งคำขอเพลง</button>
         </form>
         <div id="requestSubmitMessage" role="status" style="font-size:13px; margin-top:8px; color:var(--text-secondary);"></div>
+    </section>
+    <section class="live-requests-panel" id="viewerBirthdayPanel" style="display:none;">
+        <h3 style="margin:0 0 10px; color:var(--accent-gold);">🎂 ฝากชื่อวันเกิด</h3>
+        <form onsubmit="submitLiveBirthday(event)" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px;">
+            <input id="birthdayPersonName" type="text" maxlength="80" required placeholder="ชื่อเจ้าของวันเกิด">
+            <input id="birthdaySenderName" type="text" maxlength="60" placeholder="ชื่อผู้ฝาก (ไม่ใส่ก็ได้)">
+            <input id="birthdayMessage" type="text" maxlength="200" placeholder="ข้อความอวยพร (ไม่ใส่ก็ได้)">
+            <button type="submit" class="btn" style="background:var(--accent-gold); color:#211600; font-weight:bold;">ส่งชื่อวันเกิด</button>
+        </form>
+        <div id="birthdaySubmitMessage" role="status" style="font-size:13px; margin-top:8px; color:var(--text-secondary);"></div>
     </section>
 </div>
 
@@ -783,6 +819,7 @@
     let currentAudioSource = '';
     let liveRequestsPollTimer = null;
     let liveRequestsCache = [];
+    let liveBirthdayCache = [];
     let librarySyncReady = false;
     let librarySyncBusy = false;
     let librarySyncTimer = null;
@@ -1007,7 +1044,7 @@
             image:s.image || '', groove:s.groove || '', speed:s.speed || '', power:s.power || '',
             crowdControl:s.crowdControl || '', liveMode:s.liveMode || 'Live',
             audio1:s.audio1 || '', audio2:s.audio2 || ''
-        })), currentIndex: currentLiveIndex, requests: liveRequestsCache, updatedAt: Date.now() };
+        })), currentIndex: currentLiveIndex, requests: liveRequestsCache, birthdays: liveBirthdayCache, updatedAt: Date.now() };
     }
 
     async function publishLiveState() {
@@ -1036,7 +1073,9 @@
         if (state.showId !== showId || !Array.isArray(state.playlist) || !state.playlist.length) throw new Error('ข้อมูลโชว์ไม่ถูกต้อง');
         activePlaylistCache = state.playlist;
         liveRequestsCache = Array.isArray(state.requests) ? state.requests : liveRequestsCache;
+        liveBirthdayCache = Array.isArray(state.birthdays) ? state.birthdays : liveBirthdayCache;
         renderLiveSongRequests();
+        renderLiveBirthdays();
         currentLiveIndex = Math.max(0, Math.min(state.currentIndex || 0, activePlaylistCache.length - 1));
         updateLivePropterScreen();
     }
@@ -1069,15 +1108,67 @@
         });
     }
 
+    function renderLiveBirthdays() {
+        const panel = document.getElementById('liveBirthdayPanel');
+        const list = document.getElementById('liveBirthdaysList');
+        const empty = document.getElementById('liveBirthdaysEmpty');
+        if (!panel || !list || !empty) return;
+        const isViewerPage = new URLSearchParams(window.location.search).has('show');
+        panel.style.display = !isViewerPage && activeShowId ? 'block' : 'none';
+        list.innerHTML = '';
+        empty.style.display = liveBirthdayCache.length ? 'none' : 'block';
+        liveBirthdayCache.slice().reverse().forEach(entry => {
+            const card = document.createElement('div');
+            card.className = 'live-request-card';
+            const person = document.createElement('strong');
+            person.textContent = `🎂 ${entry.person || 'ไม่ระบุชื่อ'}`;
+            const byline = document.createElement('div');
+            byline.style.cssText = 'font-size:12px;color:var(--accent-gold);margin-top:4px;';
+            byline.textContent = `ฝากโดย ${entry.name || 'เพื่อน'}${entry.date ? ` • ${entry.date}` : ''}`;
+            card.append(person, byline);
+            if (entry.message) {
+                const message = document.createElement('div');
+                message.style.cssText = 'font-size:13px;margin-top:6px;';
+                message.textContent = entry.message;
+                card.appendChild(message);
+            }
+            list.appendChild(card);
+        });
+    }
+
     function setLiveViewerMode(mode) {
-        const allowed = ['image', 'playlist', 'requests'];
+        const allowed = ['image', 'playlist', 'requests', 'birthdays'];
         if (!allowed.includes(mode)) mode = 'image';
         const overlay = document.getElementById('liveOverlay');
-        overlay.classList.remove('viewer-mode-image', 'viewer-mode-playlist', 'viewer-mode-requests');
+        overlay.classList.remove('viewer-mode-image', 'viewer-mode-playlist', 'viewer-mode-requests', 'viewer-mode-birthdays');
         overlay.classList.add(`viewer-mode-${mode}`);
         document.querySelectorAll('#liveViewerModes button').forEach(button => {
             button.classList.toggle('active', button.dataset.view === mode);
         });
+    }
+
+    async function submitLiveBirthday(event) {
+        event.preventDefault();
+        const message = document.getElementById('birthdaySubmitMessage');
+        const showId = new URLSearchParams(window.location.search).get('show');
+        if (!SYNC_API || !showId) { message.textContent = 'ส่งชื่อไม่ได้ กรุณาเปิดลิงก์ Live ของโชว์'; return; }
+        const entry = {
+            person: document.getElementById('birthdayPersonName').value.trim(),
+            name: document.getElementById('birthdaySenderName').value.trim(),
+            message: document.getElementById('birthdayMessage').value.trim()
+        };
+        if (!entry.person) return;
+        message.textContent = 'กำลังส่งชื่อ…';
+        try {
+            const response = await fetch(`${SYNC_API}/birthdays?id=${encodeURIComponent(showId)}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry)
+            });
+            if (!response.ok) throw new Error(await apiErrorMessage(response, 'ส่งชื่อวันเกิดไม่สำเร็จ'));
+            document.getElementById('birthdayPersonName').value = '';
+            document.getElementById('birthdaySenderName').value = '';
+            document.getElementById('birthdayMessage').value = '';
+            message.textContent = 'ส่งชื่อวันเกิดแล้ว ขอบคุณค่ะ!';
+        } catch (error) { message.textContent = error.message; }
     }
 
     async function submitLiveSongRequest(event) {
@@ -1114,6 +1205,18 @@
             liveRequestsCache = Array.isArray(data.requests) ? data.requests : [];
             renderLiveSongRequests();
         } catch (error) { console.warn('โหลดรายการคำขอเพลงไม่สำเร็จ', error); }
+        await refreshLiveBirthdays(showId);
+    }
+
+    async function refreshLiveBirthdays(showId = activeShowId) {
+        if (!SYNC_API || !showId) return;
+        try {
+            const response = await fetch(`${SYNC_API}/birthdays?id=${encodeURIComponent(showId)}`, { cache: 'no-store' });
+            if (!response.ok) return;
+            const data = await response.json();
+            liveBirthdayCache = Array.isArray(data.birthdays) ? data.birthdays : [];
+            renderLiveBirthdays();
+        } catch (error) { console.warn('โหลดรายชื่อวันเกิดไม่สำเร็จ', error); }
     }
     let activePlaylistCache = [];
 
@@ -1927,8 +2030,14 @@
             return;
         }
         currentLiveIndex = startIndex;
-        document.getElementById('liveOverlay').classList.add('active');
+        const overlay = document.getElementById('liveOverlay');
+        overlay.classList.remove('is-viewer');
+        overlay.classList.add('active');
+        document.getElementById('liveViewerModes').style.display = 'flex';
+        setLiveViewerMode('image');
         updateLivePropterScreen();
+        renderLiveSongRequests();
+        renderLiveBirthdays();
         if (activeShowId) syncOwnerState();
     }
 
@@ -1937,7 +2046,11 @@
         if(songs[songIndex]) {
             activePlaylistCache = [songs[songIndex]];
             currentLiveIndex = 0;
-            document.getElementById('liveOverlay').classList.add('active');
+            const overlay = document.getElementById('liveOverlay');
+            overlay.classList.remove('is-viewer');
+            overlay.classList.add('active');
+            document.getElementById('liveViewerModes').style.display = 'flex';
+            setLiveViewerMode('image');
             updateLivePropterScreen();
         }
     }
@@ -1988,8 +2101,10 @@
             let mBadge = song.liveMode === 'Data' ? '<span style="color:#3b82f6;">[Data]</span>' : '<span style="color:#10b981;">[Live]</span>';
             sideList.innerHTML += `
                 <div class="${activeClass}" onclick="jumpLiveSong(${idx})" style="cursor:pointer;">
-                    <div><b>#${idx + 1}</b> ${song.title} ${mBadge}</div>
-                    <div style="color:var(--accent-gold);">Key: ${song.songKey}</div>
+                <div class="live-pl-song-row">
+                    <div><b>#${idx + 1}</b> <span class="live-pl-song-title">${song.title}</span> ${mBadge}</div>
+                    <div class="live-pl-song-meta"><span>Key: ${song.songKey || '-'}</span><span>คอร์ดแรก: ${song.firstChord || '-'}</span></div>
+                </div>
                 </div>
             `;
         });
@@ -2149,12 +2264,14 @@
         activeShowId = showId;
         activePlaylistCache = playlist;
         currentLiveIndex = Math.min(currentLiveIndex, playlist.length - 1);
+        liveRequestsCache = [];
+        liveBirthdayCache = [];
         try { await publishLiveState(); }
         catch (error) { activeShowId = null; alert(`เริ่มแชร์ Live ไม่สำเร็จ: ${error.message}`); closeQRCodeModal(); return; }
 
         let baseUrl = window.location.href.split('?')[0].split('#')[0];
-        liveRequestsCache = [];
         renderLiveSongRequests();
+        renderLiveBirthdays();
         await refreshLiveSongRequests(showId);
         if (liveRequestsPollTimer) clearInterval(liveRequestsPollTimer);
         liveRequestsPollTimer = setInterval(() => refreshLiveSongRequests(showId), 5000);
@@ -2251,11 +2368,13 @@
             isLiveViewer = true;
             document.getElementById('liveOverlay').style.display = 'flex';
             document.getElementById('liveOverlay').classList.add('active');
+            document.getElementById('liveOverlay').classList.add('is-viewer');
             document.getElementById('openQrModalBtn').style.display = 'none';
             document.getElementById('addSongLiveBtn').style.display = 'none';
             document.getElementById('viewerRequestPanel').style.display = 'block';
-            document.getElementById('liveRequestsPanel').style.display = 'none';
+            document.getElementById('viewerBirthdayPanel').style.display = 'block';
             document.getElementById('liveViewerModes').style.display = 'flex';
+            document.getElementById('liveRequestsPanel').style.display = 'none';
             document.body.classList.add('live-viewer');
             setLiveViewerMode('image');
             document.querySelector('.close-live-btn').style.display = 'none';
