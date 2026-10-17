@@ -835,6 +835,8 @@
     let librarySyncReady = false;
     let librarySyncBusy = false;
     let librarySyncTimer = null;
+    let librarySyncFailureCount = 0;
+    let librarySyncBlockedUntil = 0;
     let librarySyncDebounce = null;
     let settingsSyncDebounce = null;
     let librarySyncInitPromise = null;
@@ -933,6 +935,11 @@
 
     async function syncMusicLibraryWithCloud() {
         if (!SYNC_API || isLiveViewer || librarySyncBusy) return;
+        if (Date.now() < librarySyncBlockedUntil) {
+            const seconds = Math.ceil((librarySyncBlockedUntil - Date.now()) / 1000);
+            setLibrarySyncStatus(`JSONBin กำลังจำกัดคำขอ — พักซิงก์อีก ${seconds} วินาที (ข้อมูลในเครื่องยังอยู่)`, '#fbbf24');
+            return;
+        }
         librarySyncBusy = true;
         try {
             const token = await getOwnerToken();
@@ -1009,13 +1016,22 @@
                 if (!writeResponse.ok) throw new Error(await apiErrorMessage(writeResponse, 'บันทึกคลังส่วนกลางไม่ได้'));
             }
             librarySyncReady = true;
+            librarySyncFailureCount = 0;
+            librarySyncBlockedUntil = 0;
             populateDropdowns();
             renderManagers();
             setLibrarySyncStatus(`☁️ ซิงก์แล้ว • ${merged.length} เพลง`, 'var(--primary-emerald)');
             renderSongs();
         } catch (error) {
             applyingCloudLibrary = false;
-            setLibrarySyncStatus(`ซิงก์ไม่สำเร็จ: ${error.message}`, '#f87171');
+            if (/HTTP 429/i.test(error.message || '')) {
+                librarySyncFailureCount += 1;
+                const pauseMs = Math.min(5 * 60 * 1000, 60 * 1000 * (2 ** Math.min(librarySyncFailureCount - 1, 3)));
+                librarySyncBlockedUntil = Date.now() + pauseMs;
+                setLibrarySyncStatus(`JSONBin จำกัดคำขอมากเกินไป — พักซิงก์ ${Math.ceil(pauseMs / 1000)} วินาที ข้อมูลในเครื่องยังอยู่`, '#fbbf24');
+            } else {
+                setLibrarySyncStatus(`ซิงก์ไม่สำเร็จ: ${error.message}`, '#f87171');
+            }
             console.warn('Library sync failed', error);
         } finally {
             librarySyncBusy = false;
@@ -1025,7 +1041,7 @@
     function initializeLibraryCloudSync(force = false) {
         if (librarySyncInitPromise && !force) return librarySyncInitPromise;
         librarySyncInitPromise = syncMusicLibraryWithCloud().then(() => {
-            if (librarySyncReady && !librarySyncTimer) librarySyncTimer = setInterval(syncMusicLibraryWithCloud, 12000);
+            if (librarySyncReady && !librarySyncTimer) librarySyncTimer = setInterval(syncMusicLibraryWithCloud, 60000);
         }).finally(() => { librarySyncInitPromise = null; });
         return librarySyncInitPromise;
     }
@@ -2359,7 +2375,7 @@
         renderLiveBirthdays();
         await refreshLiveSongRequests(showId);
         if (liveRequestsPollTimer) clearInterval(liveRequestsPollTimer);
-        liveRequestsPollTimer = setInterval(() => refreshLiveSongRequests(showId), 5000);
+        liveRequestsPollTimer = setInterval(() => refreshLiveSongRequests(showId), 20000);
         let targetUrl = `${baseUrl}?show=${showId}`;
 
         document.getElementById('shareUrlBox').value = targetUrl;
@@ -2469,7 +2485,7 @@
                 activePlaylistCache = [{ title: error.message, songKey: '-', firstChord: '-', image: '' }];
                 currentLiveIndex = 0; updateLivePropterScreen();
             });
-            viewerPollTimer = setInterval(() => loadViewerState(showId).catch(error => console.warn(error)), 4000);
+            viewerPollTimer = setInterval(() => loadViewerState(showId).catch(error => console.warn(error)), 15000);
         } else {
             populateDropdowns();
             if (!localStorage.getItem('music_database')) {
