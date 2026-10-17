@@ -109,13 +109,17 @@ export default {
         const songs = mergeSongLists(library.songs, body.songs).filter(song => !deleted.has(songIdentity(song)));
         const oldSettings = library.settings && typeof library.settings === 'object' ? library.settings : {};
         const incomingSettings = body.settings && typeof body.settings === 'object' ? body.settings : {};
+        const oldSettingsUpdatedAt = Number(oldSettings.updatedAt || 0);
+        const incomingSettingsUpdatedAt = Number(incomingSettings.updatedAt || 0);
+        const settingsSource = incomingSettingsUpdatedAt >= oldSettingsUpdatedAt ? incomingSettings : oldSettings;
         const settings = {
-          grooves: mergeNamedSettings(oldSettings.grooves, incomingSettings.grooves),
-          crowdControls: mergeNamedSettings(oldSettings.crowdControls, incomingSettings.crowdControls)
+          grooves: mergeNamedSettings([], settingsSource.grooves),
+          crowdControls: mergeNamedSettings([], settingsSource.crowdControls),
+          updatedAt: Math.max(oldSettingsUpdatedAt, incomingSettingsUpdatedAt)
         };
         record.library = { songs, deletedIds, settings, updatedAt: Date.now() };
         await writeRecord(env, record);
-        return json({ ok: true, songs, deletedIds, updatedAt: record.library.updatedAt }, 200, headers);
+        return json({ ok: true, songs, deletedIds, settings, updatedAt: record.library.updatedAt }, 200, headers);
       }
 
       if (url.pathname.endsWith('/show') && request.method === 'GET') {

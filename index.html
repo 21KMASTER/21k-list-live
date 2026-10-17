@@ -265,6 +265,13 @@
         .library-mode-buttons { display:flex; gap:8px; justify-content:flex-end; margin:12px 0; }
         .library-mode-button { min-width:48px; min-height:44px; border:1px solid var(--border-color); background:var(--surface-color); color:var(--text-primary); border-radius:10px; font-size:20px; cursor:pointer; }
         .library-mode-button.active { border-color:var(--primary-emerald); color:var(--primary-emerald); box-shadow:0 0 0 2px rgba(16,185,129,.18); }
+        .home-playlist-box { margin:0 0 16px; padding:14px; border:1px solid var(--primary-emerald); border-radius:14px; background:rgba(16,185,129,.06); }
+        .home-playlist-heading { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; color:var(--accent-gold); }
+        .home-playlist-items { display:grid; gap:6px; max-height:28vh; overflow:auto; }
+        .home-playlist-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border-radius:9px; background:var(--bg-color); border:1px solid var(--border-color); font-size:13px; }
+        .home-playlist-actions { display:flex; gap:4px; flex:none; }
+        .home-playlist-actions button { min-width:38px; min-height:38px; border:1px solid var(--border-color); background:var(--surface-color); color:#fff; border-radius:8px; cursor:pointer; }
+        .home-playlist-add-message { font-size:12px; color:var(--primary-emerald); min-height:16px; margin-top:6px; }
         .live-viewer-modes { display:none; position:sticky; top:0; z-index:20; gap:8px; justify-content:center; padding:8px 4px; background:#07100c; }
         .live-viewer-modes button { flex:1; min-height:48px; min-width:0; max-width:240px; border:1px solid #236b50; border-radius:12px; background:#10241b; color:#fff; font-size:15px; font-weight:700; }
         .live-viewer-modes button.active { background:#10b981; color:#00150e; }
@@ -289,8 +296,10 @@
         .live-overlay.is-viewer.viewer-mode-image .live-chord-img-container { height:calc(100dvh - 110px); }
         .live-overlay.is-viewer.viewer-mode-playlist .live-playlist-sidebar { max-height:calc(100dvh - 110px); }
         .live-pl-song-row { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:5px 12px; width:100%; }
+        .live-pl-song-row > div:first-child { flex:1 1 145px; }
         .live-pl-song-title { color:#fff; font-weight:700; }
-        .live-pl-song-meta { display:flex; flex-wrap:wrap; gap:6px; color:var(--accent-gold); font-weight:700; font-size:12px; }
+        .live-pl-song-meta { display:flex; flex:1 1 210px; flex-wrap:wrap; justify-content:flex-start; gap:6px; color:var(--accent-gold); font-weight:700; font-size:12px; }
+        .live-pl-song-meta span { padding:3px 7px; border-radius:6px; background:rgba(251,191,36,.1); }
         .live-display-panel { display:none; }
         @media (max-width:900px) { .live-top-bar { flex-wrap:wrap; gap:8px; } }
         @media (max-width:520px) { .live-viewer-modes { gap:4px; } .live-viewer-modes button { padding:4px 2px; font-size:12px; } .live-requests-panel { margin:8px 0; padding:12px; } }
@@ -354,6 +363,11 @@
 
     <!-- 1. หน้าคลังเพลง -->
     <div id="homeSection" class="section-view active">
+        <section class="home-playlist-box" aria-label="Playlist ปัจจุบัน">
+            <div class="home-playlist-heading"><strong>📝 Playlist ปัจจุบัน</strong><span id="homePlaylistCount">0 เพลง</span></div>
+            <div id="homePlaylistItems" class="home-playlist-items"></div>
+            <div id="homePlaylistAddMessage" class="home-playlist-add-message" role="status"></div>
+        </section>
         <div class="search-filter-box">
             <div class="search-bar">
                 <input type="text" id="searchInput" placeholder="ค้นหาชื่อเพลง, Key, คอร์ดแรก, Groove..." oninput="filterSongs()">
@@ -906,7 +920,8 @@
     function localCustomSettings() {
         return {
             grooves: JSON.parse(localStorage.getItem('custom_grooves') || 'null') || getGrooves(),
-            crowdControls: JSON.parse(localStorage.getItem('custom_crowd_controls') || 'null') || getCrowdControls()
+            crowdControls: JSON.parse(localStorage.getItem('custom_crowd_controls') || 'null') || getCrowdControls(),
+            updatedAt: Number(localStorage.getItem('custom_settings_updated_at') || 0)
         };
     }
 
@@ -942,10 +957,23 @@
                 });
                 return [...map.values()];
             };
-            const mergedSettings = {
-                grooves: mergeNamed(remoteSettings.grooves, localSettings.grooves),
-                crowdControls: mergeNamed(remoteSettings.crowdControls, localSettings.crowdControls)
-            };
+            const remoteSettingsUpdatedAt = Number(remoteSettings.updatedAt || 0);
+            const localSettingsUpdatedAt = Number(localSettings.updatedAt || 0);
+            let mergedSettings;
+            if (remoteSettingsUpdatedAt || localSettingsUpdatedAt) {
+                const latest = localSettingsUpdatedAt > remoteSettingsUpdatedAt ? localSettings : remoteSettings;
+                mergedSettings = {
+                    grooves: Array.isArray(latest.grooves) ? latest.grooves : [],
+                    crowdControls: Array.isArray(latest.crowdControls) ? latest.crowdControls : [],
+                    updatedAt: Math.max(remoteSettingsUpdatedAt, localSettingsUpdatedAt)
+                };
+            } else {
+                mergedSettings = {
+                    grooves: mergeNamed(remoteSettings.grooves, localSettings.grooves),
+                    crowdControls: mergeNamed(remoteSettings.crowdControls, localSettings.crowdControls),
+                    updatedAt: 0
+                };
+            }
             const deletedIds = new Set([
                 ...(Array.isArray(remote.deletedIds) ? remote.deletedIds : []),
                 ...JSON.parse(localStorage.getItem('music_deleted_ids') || '[]')
@@ -962,9 +990,10 @@
             saveMusicDatabase(merged, { fromCloud: true });
             localStorage.setItem('custom_grooves', JSON.stringify(mergedSettings.grooves));
             localStorage.setItem('custom_crowd_controls', JSON.stringify(mergedSettings.crowdControls));
+            localStorage.setItem('custom_settings_updated_at', String(mergedSettings.updatedAt || 0));
             applyingCloudLibrary = false;
             const settingsChanged = JSON.stringify(mergedSettings) !== JSON.stringify({
-                grooves: remoteSettings.grooves || [], crowdControls: remoteSettings.crowdControls || []
+                grooves: remoteSettings.grooves || [], crowdControls: remoteSettings.crowdControls || [], updatedAt: remoteSettingsUpdatedAt
             });
             if (changed || settingsChanged) {
                 const writeResponse = await fetch(`${SYNC_API}/library`, {
@@ -1229,7 +1258,11 @@
         let stored = localStorage.getItem('custom_grooves');
         return stored ? JSON.parse(stored) : defaultGrooves;
     }
-    function saveGrooves(grooves) { localStorage.setItem('custom_grooves', JSON.stringify(grooves)); scheduleSettingsCloudSync(); }
+    function saveGrooves(grooves) {
+        localStorage.setItem('custom_grooves', JSON.stringify(grooves));
+        localStorage.setItem('custom_settings_updated_at', String(Date.now()));
+        scheduleSettingsCloudSync();
+    }
 
     function getCrowdControls() {
         let defaultCrowd = [
@@ -1243,7 +1276,11 @@
         let stored = localStorage.getItem('custom_crowd_controls');
         return stored ? JSON.parse(stored) : defaultCrowd;
     }
-    function saveCrowdControls(crowd) { localStorage.setItem('custom_crowd_controls', JSON.stringify(crowd)); scheduleSettingsCloudSync(); }
+    function saveCrowdControls(crowd) {
+        localStorage.setItem('custom_crowd_controls', JSON.stringify(crowd));
+        localStorage.setItem('custom_settings_updated_at', String(Date.now()));
+        scheduleSettingsCloudSync();
+    }
 
     function switchTab(tab) {
         document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
@@ -1568,6 +1605,7 @@
 
     function renderSongs() {
         populateDropdowns();
+        renderHomePlaylistPreview();
         let songs = JSON.parse(localStorage.getItem('music_database') || '[]');
         displayFilteredSongs(songs);
     }
@@ -1679,7 +1717,7 @@
                     </div>
                 </div>
                 <div class="card-footer">
-                    <button type="button" class="btn-card-action" style="background:var(--primary-emerald);color:#00150e;min-width:44px;font-size:22px;" onclick="addToPlaylist(${realIndex});switchTab('playlist')" aria-label="เพิ่มเพลงเข้า Playlist" title="เพิ่มเข้า Playlist">+</button>
+                    <button type="button" class="btn-card-action" style="background:var(--primary-emerald);color:#00150e;min-width:44px;font-size:22px;" onclick="addToHomePlaylist(${realIndex})" aria-label="เพิ่มเพลงเข้า Playlist" title="เพิ่มเข้า Playlist">+</button>
                     <div>
                         <button class="btn-card-action btn-edit" onclick="editSong(${realIndex})">✏️ แก้ไข</button>
                         <button class="btn-card-action btn-delete" onclick="deleteSong(${realIndex})">ลบ</button>
@@ -1707,7 +1745,56 @@
         let stored = localStorage.getItem('current_playlist');
         return stored ? JSON.parse(stored) : [];
     }
-    function saveCurrentPlaylist(list) { localStorage.setItem('current_playlist', JSON.stringify(list)); }
+    function saveCurrentPlaylist(list) {
+        localStorage.setItem('current_playlist', JSON.stringify(list));
+        renderHomePlaylistPreview();
+    }
+
+    function renderHomePlaylistPreview() {
+        const container = document.getElementById('homePlaylistItems');
+        const count = document.getElementById('homePlaylistCount');
+        if (!container || !count) return;
+        const playlist = getCurrentPlaylist();
+        count.textContent = `${playlist.length} เพลง`;
+        if (!playlist.length) {
+            container.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;padding:5px 2px;">ยังไม่มีเพลง เลือกเพลงจากคลังด้านล่างแล้วกด + ได้เลย</div>';
+            return;
+        }
+        container.innerHTML = playlist.map((song, index) => `
+            <div class="home-playlist-row">
+                <span><b>#${index + 1}</b> ${escapeHTML(song.title || 'ไม่มีชื่อเพลง')} <span style="color:var(--accent-gold);">${escapeHTML(song.songKey || '-')}</span></span>
+                <span class="home-playlist-actions">
+                    <button type="button" onclick="moveHomePlaylistSong(${index},-1)" aria-label="เลื่อน ${escapeHTML(song.title)} ขึ้น" ${index === 0 ? 'disabled' : ''}>⬆️</button>
+                    <button type="button" onclick="moveHomePlaylistSong(${index},1)" aria-label="เลื่อน ${escapeHTML(song.title)} ลง" ${index === playlist.length - 1 ? 'disabled' : ''}>⬇️</button>
+                    <button type="button" onclick="removeHomePlaylistSong(${index})" aria-label="นำ ${escapeHTML(song.title)} ออกจาก Playlist">✕</button>
+                </span>
+            </div>`).join('');
+    }
+
+    function addToHomePlaylist(songIndex) {
+        const songs = JSON.parse(localStorage.getItem('music_database') || '[]');
+        const song = songs[songIndex];
+        if (!song) return;
+        const playlist = getCurrentPlaylist();
+        playlist.push(song);
+        saveCurrentPlaylist(playlist);
+        const message = document.getElementById('homePlaylistAddMessage');
+        if (message) message.textContent = `เพิ่ม “${song.title}” เข้า Playlist แล้ว`;
+    }
+
+    function moveHomePlaylistSong(index, direction) {
+        const playlist = getCurrentPlaylist();
+        const destination = index + direction;
+        if (destination < 0 || destination >= playlist.length) return;
+        [playlist[index], playlist[destination]] = [playlist[destination], playlist[index]];
+        saveCurrentPlaylist(playlist);
+    }
+
+    function removeHomePlaylistSong(index) {
+        const playlist = getCurrentPlaylist();
+        playlist.splice(index, 1);
+        saveCurrentPlaylist(playlist);
+    }
 
     function renderPlaylistBuilder() {
         let playlist = getCurrentPlaylist();
